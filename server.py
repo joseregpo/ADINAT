@@ -8,39 +8,89 @@ def traiter_client(sock_fille):
         
         match mess.decode():
             case "help":
-                sock_fille.sendall(mess.upper())
+                print("je suis la")
+                help(mess, sock_fille)
             case "login":
-                sock_fille.sendall(mess.upper())
+                login(mess, sock_fille)
             case "msg":
-                sock_fille.sendall(mess.upper())
+                msg(mess, sock_fille)
             case "msgpv":
-                sock_fille.sendall(mess.upper())
+                msgpv(mess, sock_fille)
             case "exit":
-                sock_fille.sendall(mess.upper())
+                exit(mess, sock_fille)
             case "afk":
-                sock_fille.sendall(mess.upper())
+                afk(mess, sock_fille)
             case "btk":
-                sock_fille.sendall(mess.upper())
+                btk(mess, sock_fille)
             case "users":
-                sock_fille.sendall(mess.upper())
+                users(mess, sock_fille)
             case "rename":
-                sock_fille.sendall(mess.upper())
+                rename(mess, sock_fille)
             case "ping":
-                sock_fille.sendall(mess.upper())
+                ping(mess, sock_fille)
             case "channel":
-                sock_fille.sendall(mess.upper())
+                channel(mess, sock_fille)
             case "acceptchannel":
-                sock_fille.sendall(mess.upper())
+                acceptchannel(mess, sock_fille)
             case "declinechannel":
-                sock_fille.sendall(mess.upper())
+                declinechannel(mess, sock_fille)
             case "sharefile":
-                sock_fille.sendall(mess.upper())
+                sharefile(mess, sock_fille)
             case "acceptfile":
-                sock_fille.sendall(mess.upper())
+                acceptfile(mess, sock_fille)
             case "declinefile":
-                sock_fille.sendall(mess.upper())
+                declinefile(mess, sock_fille)
             case other:
                 sock_fille.sendall("Unknown command".encode())
+
+def help(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def login(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def msg(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def msgpv(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def exit(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def afk(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def btk(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def users(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def rename(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def ping(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def channel(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def acceptchannel(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def declinechannel(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def sharefile(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def acceptfile(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+def declinefile(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
 
 with socket.socket() as sock_locale:
     sock_locale.bind(("", int(sys.argv[1])))
