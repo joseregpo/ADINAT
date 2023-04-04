@@ -12,7 +12,7 @@ def traiter_client(sock_fille):
         match mess[0]:
             case "help":
                 help(mess, sock_fille)
-            case "login":
+            case "signup":
                 login(mess, sock_fille)
             case "msg":
                 msg(mess, sock_fille)
