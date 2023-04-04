@@ -76,12 +76,17 @@ def signupFromSrv(username, sock_fille):
 
 
 def msg(mess, sock_fille):
-    if len(mess) != 2:
-        sock_fille.sendall("403".encode())
+    state = getState(sock_fille)
+    if state == "afk":
+        sock_fille.sendall("415".encode())
     else:
-        message = mess[1]
-
-        msgFromSrv()
+        username = getUsername(sock_fille)
+        if len(mess) != 2:
+            sock_fille.sendall("403".encode())
+        else:
+            message = mess[1]
+            msgFromSrv(username, message, sock_fille)
+            sock_fille.sendall("200".encode())
 
 def msgFromSrv(username, message, sock_fille):
     for i in range (len(users)):
