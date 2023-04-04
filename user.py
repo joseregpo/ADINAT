@@ -12,7 +12,7 @@ class User():
             self.socket = socket
 
         if state is None:
-            self.state = ""
+            self.state = "afk"
         else:
             self.state = state
 

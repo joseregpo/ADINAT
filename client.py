@@ -30,7 +30,7 @@ def listen_server_cmd(socket):
 def talk_to_server(socket):
     socket.connect((adresse, int(port)))
     while True:
-        commande = input("Pour commencer entrer la commande login\n")
+        commande = input("Pour commencer entrer la commande signup\n")
         if commande.upper() == "QUIT":
             break
         socket.send(commande.encode())
