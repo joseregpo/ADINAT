@@ -59,6 +59,7 @@ def help(mess, sock_fille):
 
 def signup(mess, sock_fille):
     state = getState(sock_fille)
+    print(mess)
     if state == "btk":
         sock_fille.sendall("416".encode())
     else:
@@ -75,32 +76,42 @@ def signupFromSrv(username, sock_fille):
     for i in range (len(users)):
         sock = users[i].getSocket()
         if sock_fille != sock:
-            sock.sendall("signupFromSrv|"+username)
+            sock.sendall(("signupFromSrv|"+username).encode())
 
 
 
 def msg(mess, sock_fille):
     state = getState(sock_fille)
+    print(mess)
     if state == "afk":
         sock_fille.sendall("415".encode())
     else:
         username = getUsername(sock_fille)
-        if len(mess) != 2:
+        if len(mess) != 1:
             sock_fille.sendall("403".encode())
         else:
-            message = mess[1]
-            msgFromSrv(username, message, sock_fille)
+            msgFromSrv(username, mess, sock_fille)
             sock_fille.sendall("200".encode())
 
 def msgFromSrv(username, message, sock_fille):
     for i in range (len(users)):
         sock = users[i].getSocket()
         if sock_fille != sock:
-            sock.sendall("msgFromSrv|"+username+"|"+message)
+            sock.sendall(("msgFromSrv|"+username+"|"+message).encode())
 
 
 
 def msgpv(mess, sock_fille):
+    state = getState(sock_fille)
+    if state == "afk":
+        sock_fille.sendall("415".encode())
+    else:
+        username = getUsername(sock_fille)
+        mess = mess.split(" ", 1)
+        dest = mess[0]
+        message = mess[1]
+
+        
     sock_fille.sendall(mess.upper())
 
 def exit(mess, sock_fille):
