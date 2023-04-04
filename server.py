@@ -1,14 +1,16 @@
 import socket
 import sys
 import threading
+from user import *
 
 def traiter_client(sock_fille):
     while True:
         mess = sock_fille.recv(256)
+        mess = mess.decode()
+        mess = mess.split(" ", 1)
         
-        match mess.decode():
+        match mess[0]:
             case "help":
-                print("je suis la")
                 help(mess, sock_fille)
             case "login":
                 login(mess, sock_fille)
@@ -47,7 +49,15 @@ def help(mess, sock_fille):
     sock_fille.sendall(mess.upper())
 
 def login(mess, sock_fille):
-    sock_fille.sendall(mess.upper())
+    if len(mess) != 2:
+        sock_fille.sendall("403".encode())
+    else:
+        username = mess[1]
+        user = User(username, sock_fille)
+        users.append(user)
+        for i in range (len(users)):
+            print(users[i])
+        sock_fille.sendall("200".encode())
 
 def msg(mess, sock_fille):
     sock_fille.sendall(mess.upper())
@@ -91,6 +101,9 @@ def acceptfile(mess, sock_fille):
 def declinefile(mess, sock_fille):
     sock_fille.sendall(mess.upper())
 
+
+
+users = []
 
 with socket.socket() as sock_locale:
     sock_locale.bind(("", int(sys.argv[1])))
