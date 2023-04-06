@@ -21,11 +21,11 @@ def traiter_client(sock_fille):
             case "exit":
                 exit(mess, sock_fille)
             case "afk":
-                afk(mess, sock_fille)
+                afk(sock_fille)
             case "btk":
-                btk(mess, sock_fille)
+                btk(sock_fille)
             case "users":
-                users(mess, sock_fille)
+                users(sock_fille)
             case "rename":
                 rename(mess, sock_fille)
             case "ping":
@@ -43,7 +43,7 @@ def traiter_client(sock_fille):
             case "declinefile":
                 declinefile(mess, sock_fille)
             case other:
-                sock_fille.sendall("Unknown command".encode())
+                sock_fille.sendall("400".encode())
 
 def help(mess, sock_fille):
     state = getState(sock_fille)
@@ -59,18 +59,24 @@ def help(mess, sock_fille):
 
 def signup(mess, sock_fille):
     state = getState(sock_fille)
-    print(mess)
+    print(state)
     if state == "btk":
         sock_fille.sendall("416".encode())
+    elif state == "afk":
+        sock_fille.sendall("415".encode())
+    elif len(mess) != 2:
+        sock_fille.sendall("403".encode())
     else:
-        if len(mess) != 2:
-            sock_fille.sendall("403".encode())
-        else:
-            username = mess[1]
+        username = mess[1]
+        usernameIsTaken = verifyUsernameIsNotAlreadyTaken(username)
+        if not usernameIsTaken:
             user = User(username, sock_fille)
+            user.setState("btk")
             users.append(user)
             signupFromSrv(username, sock_fille)
             sock_fille.sendall("200".encode())
+        else:
+            sock_fille.sendall("425".encode())
 
 def signupFromSrv(username, sock_fille):
     for i in range (len(users)):
@@ -111,20 +117,45 @@ def msgpv(mess, sock_fille):
         dest = mess[0]
         message = mess[1]
 
-        
-    sock_fille.sendall(mess.upper())
 
 def exit(mess, sock_fille):
     sock_fille.sendall(mess.upper())
 
-def afk(mess, sock_fille):
-    sock_fille.sendall(mess.upper())
+def afk(sock_fille):
+    for i in range (len(users)):
+        if users[i].getSocket() == sock_fille:
+            users[i].setState("afk")
+            break
 
-def btk(mess, sock_fille):
-    sock_fille.sendall(mess.upper())
+    afkFromSrv(sock_fille)
+    sock_fille.sendall("200".encode())
 
-def users(mess, sock_fille):
-    sock_fille.sendall(mess.upper())
+def afkFromSrv(sock_fille):
+    username = getUsername(sock_fille)
+    for i in range (len(users)):
+        if users[i].getSocket() != sock_fille:
+            sock_fille.sendall(("afkFromSrv|"+username).encode())
+
+
+def btk(sock_fille):
+    for i in range (len(users)):
+        if users[i].getSocket() == sock_fille:
+            users[i].setState("btk")
+            break
+
+    btkFromSrv(sock_fille)
+    sock_fille.sendall("200".encode())
+
+def btkFromSrv(sock_fille):
+    username = getUsername(sock_fille)
+    for i in range (len(users)):
+        if users[i].getSocket() != sock_fille:
+            sock_fille.sendall(("btkFromSrv|"+username).encode())
+
+def users(sock_fille):
+    usersname = getAllUsersname(sock_fille)
+    print(usersname)
+    sock_fille.sendall(usersname.encode())
 
 def rename(mess, sock_fille):
     sock_fille.sendall(mess.upper())
@@ -153,13 +184,30 @@ def declinefile(mess, sock_fille):
 
 def getUsername(sock_fille):
     for i in range (len(users)):
-        if users[i].getSocket == sock_fille:
+        if users[i].getSocket() == sock_fille:
             return users[i].getUsername()
+    return None
+
+def getAllUsersname(sock_fille):
+    allUsersname = []
+    username = getUsername(sock_fille)
+    for i in range (len(users)):
+        if users[i].getUsername() != username:
+            allUsersname.append(users[i].getUsername())
+
+    return allUsersname  
         
 def getState(sock_fille):
     for i in range (len(users)):
-        if users[i].getSocket == sock_fille:
+        if users[i].getSocket() == sock_fille:
             return users[i].getState()
+    return None
+        
+def verifyUsernameIsNotAlreadyTaken(username):
+    for i in range (len(users)):
+        if users[i].getUsername() == username:
+            return True
+    return False
 
 
 
@@ -182,6 +230,7 @@ print("Bye")
 
 
 for t in threading.enumerate():
-    if t != threading.main_thread(): t.join
+    if t != threading.main_thread(): 
+        t.join
     
 sys.exit(0)
