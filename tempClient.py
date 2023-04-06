@@ -2,14 +2,14 @@ import socket
 import sys
 import threading 
 
-def send_tosrv(sock):
+def send_to_srv(sock):
     # while True:
     #     message = input('Enter message: ')
     #     sock.sendall(message.encode())
+    print(sock)
     while True:
         commande = input("Pour commencer entrer la commande login\n")
-        if commande.upper() == "QUIT":
-            break
+        print(sock)
         sock.send(commande.encode())
 
 def listen_to_srv(sock):
@@ -44,15 +44,16 @@ def listen_to_srv(sock):
 
 adresse, port = sys.argv[1].split(":")
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_locale:
-    sock_locale.connect((adresse, int(port)))
-    threading.Thread(target=send_tosrv, args=(sock_locale,)).start()
-    threading.Thread(target=listen_to_srv, args=(sock_locale,)).start()
-    # send_tosrv(sock_locale)
-    # listen_to_srv(sock_locale)
+sock_locale = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+sock_locale.connect((adresse, int(port)))
+t_read = threading.Thread(target=listen_to_srv, args=(sock_locale,)).start()
+t = threading.Thread(target=send_to_srv, args=(sock_locale,)).start()
 
 for t in threading.enumerate():
     if t != threading.main_thread(): 
         t.join
 
-sys.exit(0)
+# sock_locale.close()
+    # send_tosrv(sock_locale)
+    # listen_to_srv(sock_locale)
+

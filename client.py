@@ -28,7 +28,6 @@ def listen_server_cmd(socket):
     pass
 
 def talk_to_server(socket):
-    socket.connect((adresse, int(port)))
     while True:
         commande = input("Pour commencer entrer la commande signup\n")
         if commande.upper() == "QUIT":
@@ -38,7 +37,7 @@ def talk_to_server(socket):
         reponse = reponse.decode()
         reponse.split("|", 1)
         if reponse[0] != "200" :
-            print(reponse[0])
+            print("Erreur :" + reponse)
         else:
         #Traitement des messages constants du serveur
             match commande:
@@ -77,33 +76,18 @@ def talk_to_server(socket):
                 case "declinefile":
                     pass
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_locale:
-    sock_locale.bind(("", int(sys.argv[1])))
-    sock_locale.listen(4)
-    
-    while True:
-        try:
-            socket_serveur, adr_srv = sock_locale.accept()
-            threading.Thread(target=talk_to_server,
-            args=(socket_serveur,)).start()
-        except KeyboardInterrupt:
-            break
 
+# Create a socket object
+# with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((adresse, int(port)))
+# Start threads for receiving and sending data
+recv_thread = threading.Thread(target=listen_server_cmd, args=(s,))
+send_thread = threading.Thread(target=talk_to_server, args=(s,))
+recv_thread.start()
+send_thread.start()
 
-with socket.socket() as sock_listener:
-    sock_listener.bind(("", int(sys.argv[1])))
-    sock_listener.listen(4)
-    
-    while True:
-        try:
-            socket_serveur, adr_srv = sock_listener.accept()
-            threading.Thread(target=listen_server_cmd,
-            args=(socket_serveur,)).start()
-        except KeyboardInterrupt:
-            break
-
-
-for t in threading.enumerate():
-    if t != threading.main_thread(): t.join
-
+# Wait for threads to finish
+recv_thread.join()
+send_thread.join()
 sys.exit(0)
