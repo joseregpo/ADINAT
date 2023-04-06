@@ -1,5 +1,6 @@
 import socket
 import sys
+import threading
 
 #Traitements du serveur
 adresse, port = sys.argv[1].split(":")
@@ -22,21 +23,24 @@ reponses_possibles = {
 #Partie stockage utilisateur
 username = ""
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_locale:
-    sock_locale.connect((adresse, int(port)))
+#Methodes
+def listen_server_cmd(socket):
+    pass
+
+def talk_to_server(socket):
+    socket.connect((adresse, int(port)))
     while True:
         commande = input("Pour commencer entrer la commande signup\n")
         if commande.upper() == "QUIT":
             break
-        sock_locale.send(commande.encode())
-        reponse = sock_locale.recv(256)
+        socket.send(commande.encode())
+        reponse = socket.recv(256)
         reponse = reponse.decode()
         reponse.split("|", 1)
         if reponse[0] != "200" :
-            print(reponses_possibles[reponse])
+            print(reponse[0])
         else:
-
-            #Traitement des messages constants du serveur
+        #Traitement des messages constants du serveur
             match commande:
                 case "help":
                     print(reponse[1])
@@ -73,3 +77,33 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_locale:
                 case "declinefile":
                     pass
 
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_locale:
+    sock_locale.bind(("", int(sys.argv[1])))
+    sock_locale.listen(4)
+    
+    while True:
+        try:
+            socket_serveur, adr_srv = sock_locale.accept()
+            threading.Thread(target=talk_to_server,
+            args=(socket_serveur,)).start()
+        except KeyboardInterrupt:
+            break
+
+
+with socket.socket() as sock_listener:
+    sock_listener.bind(("", int(sys.argv[1])))
+    sock_listener.listen(4)
+    
+    while True:
+        try:
+            socket_serveur, adr_srv = sock_listener.accept()
+            threading.Thread(target=listen_server_cmd,
+            args=(socket_serveur,)).start()
+        except KeyboardInterrupt:
+            break
+
+
+for t in threading.enumerate():
+    if t != threading.main_thread(): t.join
+
+sys.exit(0)
