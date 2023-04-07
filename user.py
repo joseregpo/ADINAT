@@ -20,8 +20,8 @@ class User():
         s = "Username : " + self.username + "\nSocket : " + str(self.socket) + "\nState : " + self.state
         return s
     
-    def __eq__(self, user):
-        return self.username == user.username and self.socket == user.socket
+    # def __eq__(self, user):
+    #     return self.username == user.username and self.socket == user.socket
     
     def setState(self, state):
         self.state = state

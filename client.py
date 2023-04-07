@@ -13,10 +13,17 @@ reponses_possibles = {
     "403": "Wrong numbers of parameters",
     "404": "Private channel already exists",
     "405": "File name does not exist",
+    "407": "You are not authorized to send messages to yourself",
     "415": "Already afk",
     "416": "Alredy btk",
+    "417": "User already logged in",
+    "418": "User must be logged in",
     "421": "Private channel does not exist",
     "425": "Username already taken",
+    "426": "Username must not contain special characters or numbers",
+    "430": "User if afk",
+    "440": "You have no pending private channel requests",
+    "441": "You have already sent this requests",
     "500": "Internal server error",
 }
 
@@ -32,27 +39,38 @@ def listen_server_cmd(sock):
         while True:
             reponse = sock.recv(1024)
             reponse = reponse.decode()
-            r_formatted = reponse.split("|", 1)
-            if r_formatted[0] != "200" and not r_formatted[0] in reponses_possibles.keys():
-                print(f"{r_formatted[0]} : {reponses_possibles[r_formatted[0]]}")
-            else:
+            r_formatted = reponse.split("|")
+            # if r_formatted[0] != "200" and not r_formatted[0] in reponses_possibles.keys():
+            #     print(r_formatted[0])
+                # print(f"{r_formatted[0]} : {reponses_possibles[r_formatted[0]]}")
+            # if r_formatted[0] == "200":
             #Traitement des messages constants du serveur
+
+            if r_formatted[0] != "200" and r_formatted[0] in reponses_possibles.keys():
+                print(r_formatted[0] + " : " + reponses_possibles[r_formatted[0]])
+            
+            else:
                 if r_formatted[0] not in commands_from_srv:
-                    match lastCommand:
+                    print(r_formatted)
+                    command = lastCommand.split(' ')
+                    match command[0]:
                         case "help":
                             print(r_formatted[1])
                         case "signup":
                             username = lastCommand.split(" ", 1)
                             username = username[1]
+                            print("You are now connected")
                         case "msg":
-                            liste_msg += f"{r_formatted[1]} : {r_formatted[2]}\n"
-                            for mess in liste_msg:
-                                print(mess)
+                            print("Message envoyé")
+                            # liste_msg += f"{r_formatted[1]} : {r_formatted[2]}\n"
+                            # for mess in liste_msg:
+                            #     print(mess)
                         case "msgpv":
-                            liste_msg_pv += f"{r_formatted[1]} : {r_formatted[2]}\n"
-                            for mess in liste_msg_pv:
-                                print(f"discussion avec {r_formatted[1]}")
-                                print(mess)
+                            print("Message privé envoyé")
+                            # liste_msg_pv += f"{r_formatted[1]} : {r_formatted[2]}\n"
+                            # for mess in liste_msg_pv:
+                            #     print(f"discussion avec {r_formatted[1]}")
+                            #     print(mess)
                         case "exit":
                             print("You are now offline")
                         case "afk":
@@ -62,16 +80,17 @@ def listen_server_cmd(sock):
                         case "users":
                             print(r_formatted[1])
                         case "rename":
-                            username = lastCommand.split(" ", 1)
-                            username = username[1]
-                        case "pingFromSrv":
-                            print(f"{r_formatted[1]} has pinged you")
+                            print("You were been renamed")
+                            # username = lastCommand.split(" ", 1)
+                            # username = username[1]
+                        case "ping":
+                            print("You pinged someone")
                         case "channel":
-                            pass
+                            print("Your request channel has been sent")
                         case "acceptchannel":
-                            pass
+                            print("Your request channel has been accepted")
                         case "declinechannel":
-                            pass
+                            print("Your request channel has been declined")
                         case "sharefile":
                             pass
                         case "acceptfile":
@@ -85,11 +104,12 @@ def listen_server_cmd(sock):
                         case "signupFromSrv":
                             print(f"{r_formatted[1]} has arrived to the server !")
                         case "msgFromSrv":
-                            print(f"{r_formatted[1]} has arrived to the server !")
+                            print("Général : " + r_formatted[1] + " : " + r_formatted[2])
                         case "msgpvFromSrv":
-                            liste_msg += f"{r_formatted[1]} : {r_formatted[2]}\n"
-                            for mess in liste_msg:
-                                print(mess)
+                            print("Privé : " + r_formatted[1] + " : " + r_formatted[2])
+                            # liste_msg += f"{r_formatted[1]} : {r_formatted[2]}\n"
+                            # for mess in liste_msg:
+                            #     print(mess)
                         case "exitedFromSrv":
                             print(f"{r_formatted[1]} has exited the server")
                         case "afkFromSrv":
@@ -103,7 +123,7 @@ def listen_server_cmd(sock):
                         case "pingFromSrv":
                             print(f"{r_formatted[1]} is looking for you")
                         case "channelFromSrv":
-                            print(f"{r_formatted[1]} wants to be private with you")
+                            print(f"{r_formatted[2]} wants to be private with you")
                         case "acceptedchannelFromSrv":
                             print(f"{r_formatted[1]} has accepted your channel")
                         case "declinedchannelFromSrv":
