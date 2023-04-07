@@ -25,15 +25,15 @@ def traiter_client(sock_fille):
             case "btk":
                 btk(sock_fille)
             case "users":
-                users(sock_fille)
+                getUsers(sock_fille)
             case "rename":
-                rename(mess, sock_fille)
+                rename(mess[1], sock_fille)
             case "ping":
-                ping(mess, sock_fille)
+                ping(mess[1], sock_fille)
             case "channel":
-                channel(mess, sock_fille)
+                channel(mess[1], sock_fille)
             case "acceptchannel":
-                acceptchannel(mess, sock_fille)
+                acceptchannel(mess[1], sock_fille)
             case "declinechannel":
                 declinechannel(mess, sock_fille)
             case "sharefile":
@@ -53,7 +53,7 @@ def help(mess, sock_fille):
         if len(mess) != 1:
             sock_fille.sendall("403".encode())
         else:
-            sock_fille.sendall("200|signup <username> : allows you to login into the chatroom\n msg <message> : sends a message in the global chatroom,\n msgpv <username>  <user> : sends a message to someone,\n exit : allows you to leave the chatroom,\n afk : avoid you to sends message in the chatroom,\n btk : allows you to send message in the chatroom if you were afk,\n users : Notifies which clients are connected to the server,\n rename <username> : allows you to change your name,\n ping <username> : sends a ping to a user,\n channel <username> : demands the specified user to create a private channel with him,\n acceptchannel <username> : accept the channel creation demand,\n declinechannel <username> : refuse the channel creation demand,\n sharefile <username> <namefile> : Share a file to someone but he has to accept,\n acceptfile <username> <namefile> : accept the file that has been shared by a user,\n declinefile <username> <namefile> : refuse the file that has benn shared by a user".encode())
+            sock_fille.sendall("200|signup <username> : allows you to login into the chatroom\n msg <message> : sends a message in the global chatroom,\n msgpv <username>  <user> : sends a message to someone,\n exit : allows you to leave the chatroom,\n afk : avoid you to sends message in the chatroom,\n btk : allows you to send message in the chatroom if you were afk,\n users : Notifies which clients are connected to the server,\n rename <username> : allows you to change your name,\n ping <username> : sends a ping to a user,\n channel <username> : demands the specified user to create a private channel with him,\n acceptchannel <username> : accept the channel creation demand,\n declinechannel <username> : refuse the channel creation demand,\n sharefile <username> <namefile> : Share a file to someone but he has to accept,\n acceptfile <username> <namefile> : accept the file that has been shared by a user,\n declinefile <username> <namefile> : refuse the file that has benn shared by a user\n".encode())
 
 
 
@@ -121,19 +121,15 @@ def msgpv(mess, sock_fille):
     if not connected:
         sock_fille.sendall("418".encode())
     elif not dest_user.getConnected():
-        sock_fille.sendall("406".encode())
+        sock_fille.sendall("402".encode())
     elif state == "afk":
         sock_fille.sendall("430".encode())
     else:
-        msgFromSrv()
+        msgFromSrv(dest_user, message)
 
 def msgpvFromSrv(dest_user, message):
     dest_sock = dest_user.getSocket()
     dest_sock.sendall(message)
-
-
-def exit(mess, sock_fille):
-    sock_fille.sendall(mess.upper())
 
 def afk(sock_fille):
     state = getState(sock_fille)
@@ -174,25 +170,118 @@ def btkFromSrv(sock_fille):
         if users[i].getSocket() != sock_fille:
             sock_fille.sendall(("btkFromSrv|"+username).encode())
 
-def users(sock_fille):
-    usersname = getAllUsersname(sock_fille)
-    print(usersname)
-    sock_fille.sendall(usersname.encode())
+def getUsers(sock_fille):
+    connected = getConnected(sock_fille)
+    state = getState(sock_fille)
+    if not connected:
+        sock_fille.sendall("418".encode())
+    elif state == "afk":
+        sock_fille.sendall("430".encode())
+    else:
+        usersname = getAllUsersname(sock_fille)
+        sock_fille.sendall(("200|"+str(usersname)).encode())
 
 def rename(mess, sock_fille):
-    sock_fille.sendall(mess.upper())
+    connected = getConnected(sock_fille)
+    state = getState(sock_fille)
+    if not connected:
+        sock_fille.sendall("418".encode())
+    elif state == "afk":
+        sock_fille.sendall("430".encode())
+    else:
+        new_username = mess
+        user = getUser(sock_fille)
+        user.setUsername(new_username)
+        renameFromSrv(user.getUsername(), new_username, sock_fille)
+        sock_fille.sendall("200".encode())
+
+def renameFromSrv(old_username, new_username, sock_fille):
+    for i in range (len(users)):
+        if users[i].getSocket() != sock_fille:
+            users[i].getSocket().sendall(("renameFromSrv|"+old_username+"|"+new_username).encode())
 
 def ping(mess, sock_fille):
-    sock_fille.sendall(mess.upper())
+    connected = getConnected(sock_fille)
+    state = getState(sock_fille)
+    if not connected:
+        sock_fille.sendall("418".encode())
+    elif state == "afk":
+        sock_fille.sendall("430".encode())
+    else:
+        username = getUsername(sock_fille)
+        dest_user = getDest(mess)
+        if dest_user is not None:
+            pingFromSrv(dest_user, username)
+            sock_fille.sendall("200".encode())
+        else:
+            sock_fille.sendall("402".encode())
+
+def pingFromSrv(dest_user, username):
+    dest_user.getSocket().sendall(("pingFromSrv|"+username).encode())
 
 def channel(mess, sock_fille):
-    sock_fille.sendall(mess.upper())
+    connected = getConnected(sock_fille)
+    state = getState(sock_fille)
+    if not connected:
+        sock_fille.sendall("418".encode())
+    elif state == "afk":
+        sock_fille.sendall("430".encode())
+    else:
+        dest_user = getDest(mess)
+        if dest_user is not None:
+            username = getUsername(sock_fille)
+            channelFromSrv(dest_user, username)
+            sock_fille.sendall("200".encode())
+        else:
+            sock_fille.sendall("402".encode())        
+
+def channelFromSrv(dest_user, username):
+    dest_user.setRequestChannel(username)
+    dest_user.getSocket().sendall(("channelFromSrv|"+dest_user.getUsername()+"|"+username).encode())
 
 def acceptchannel(mess, sock_fille):
-    sock_fille.sendall(mess.upper())
+    connected = getConnected(sock_fille)
+    state = getState(sock_fille)
+    if not connected:
+        sock_fille.sendall("418".encode())
+    elif state == "afk":
+        sock_fille.sendall("430".encode())
+    else:
+        sender = getDest(mess)
+        if sender is not None:
+            acceptedchannelFromSrv(sender, sock_fille)
+            sock_fille.sendall("200".encode())
+        else:
+            sock_fille.sendall("402".encode())
+
+def acceptedchannelFromSrv(sender, sock_fille):
+    user = getUser(sock_fille)
+    user.addUserToChannel(sender)
+    user.removeUserFromRequestChannel(sender)
+    sender.addUserToChannel(user.getUsername())
+    sender.getSocket().sendall(("acceptedchannelFromSrv|"+sender.getUsername()).encode())
+
 
 def declinechannel(mess, sock_fille):
-    sock_fille.sendall(mess.upper())
+    connected = getConnected(sock_fille)
+    state = getState(sock_fille)
+    if not connected:
+        sock_fille.sendall("418".encode())
+    elif state == "afk":
+        sock_fille.sendall("430".encode())
+    else:
+        sender = getDest(mess)
+        if sender is not None:
+            declinedchannelFromSrv(sender, sock_fille)
+            sock_fille.sendall("200".encode())
+        else:
+            sock_fille.sendall("402".encode())
+
+
+def declinedchannelFromSrv(sender, sock_fille):
+    user = getUser(sock_fille)
+    user.removeUserFromRequestChannel(sender)
+    sender.getSocket().sendall(("declinedchannelFromSrv|"+sender.getUsername()).encode())
 
 def sharefile(mess, sock_fille):
     sock_fille.sendall(mess.upper())
@@ -203,10 +292,22 @@ def acceptfile(mess, sock_fille):
 def declinefile(mess, sock_fille):
     sock_fille.sendall(mess.upper())
 
+def exit(mess, sock_fille):
+    sock_fille.sendall(mess.upper())
+
+
+
+
 
 def getDest(username):
     for i in range(len(users)):
         if users[i].getUsername() == username:
+            return users[i]
+    return None
+
+def getUser(sock_fille):
+    for i in range (len(users)):
+        if users[i].getSocket() == sock_fille:
             return users[i]
     return None
 

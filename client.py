@@ -22,79 +22,88 @@ reponses_possibles = {
 
 #Partie stockage utilisateur
 username = ""
-lastCommand = ""
 
 #Methodes
-def listen_server_cmd(sock):
-    with sock:
-        while True:
-            reponse = sock.recv(256)
-            reponse = reponse.decode()
-            reponse.split("|", 1)
-            print(reponse)
-            if reponse[0] != "200" :
-                print("Erreur :" + reponse)
-            else:
-            #Traitement des messages constants du serveur
-                match lastCommand:
-                    case "help":
-                        print(reponse[1])
-                    case "signup":
-                        username = lastCommand.split(" ", 1)
-                        username = username[1]
-                    case "msg":
-                        print(reponses_possibles[reponse[0]])
-                    case "msgpv":
-                        print(reponses_possibles[reponse[0]])
-                    case "exit":
-                        print(reponses_possibles[reponse[0]])
-                    case "afk":
-                        print(reponses_possibles[reponse[0]])
-                    case "btk":
-                        print(reponses_possibles[reponse[0]])
-                    case "users":
-                        print(reponse[1])
-                    case "rename":
-                        username = lastCommand.split(" ", 1)
-                        username = username[1]
-                    case "pingFromSrv":
-                        print(f"reponse[1] has pinged you")
-                    case "channel":
-                        pass
-                    case "acceptchannel":
-                        pass
-                    case "declinechannel":
-                        pass
-                    case "sharefile":
-                        pass
-                    case "acceptfile":
-                        pass
-                    case "declinefile":
-                        pass
-                    case other:
-                        pass
+def listen_server_cmd(socket):
+    pass
 
-def talk_to_server(sock):
-    with sock:
-        while True:
-            lastCommand = input("Pour commencer entrer la commande signup\n")
-            if lastCommand.upper() == "QUIT":
-                break
-            print(lastCommand)
-            sock.sendall(lastCommand.encode())
+def talk_to_server(socket):
+    socket.connect((adresse, int(port)))
+    while True:
+        commande = input("Pour commencer entrer la commande signup\n")
+        if commande.upper() == "QUIT":
+            break
+        socket.send(commande.encode())
+        reponse = socket.recv(256)
+        reponse = reponse.decode()
+        reponse.split("|", 1)
+        if reponse[0] != "200" :
+            print(reponse[0])
+        else:
+        #Traitement des messages constants du serveur
+            match commande:
+                case "help":
+                    print(reponse[1])
+                case "signup":
+                    username = commande.split(" ", 1)
+                    username = username[1]
+                case "msg":
+                    print(reponses_possibles[reponse[0]])
+                case "msgpv":
+                    print(reponses_possibles[reponse[0]])
+                case "exit":
+                    print(reponses_possibles[reponse[0]])
+                case "afk":
+                    print(reponses_possibles[reponse[0]])
+                case "btk":
+                    print(reponses_possibles[reponse[0]])
+                case "users":
+                    print(reponse[1])
+                case "rename":
+                    username = commande.split(" ", 1)
+                    username = username[1]
+                case "pingFromSrv":
+                    print(f"reponse[1] has pinged you")
+                case "channel":
+                    pass
+                case "acceptchannel":
+                    pass
+                case "declinechannel":
+                    pass
+                case "sharefile":
+                    pass
+                case "acceptfile":
+                    pass
+                case "declinefile":
+                    pass
+
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_locale:
+    sock_locale.bind(("", int(sys.argv[1])))
+    sock_locale.listen(4)
     
+    while True:
+        try:
+            socket_serveur, adr_srv = sock_locale.accept()
+            threading.Thread(target=talk_to_server,
+            args=(socket_serveur,)).start()
+        except KeyboardInterrupt:
+            break
 
-# Create a socket object
-# with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((adresse, int(port)))
-# Start threads for receiving and sending data
-recv_thread = threading.Thread(target=listen_server_cmd, args=(s,))
-send_thread = threading.Thread(target=talk_to_server, args=(s,))
-recv_thread.start()
-send_thread.start()
 
-# Wait for threads to finish
-recv_thread.join()
-send_thread.join()
+with socket.socket() as sock_listener:
+    sock_listener.bind(("", int(sys.argv[1])))
+    sock_listener.listen(4)
+    
+    while True:
+        try:
+            socket_serveur, adr_srv = sock_listener.accept()
+            threading.Thread(target=listen_server_cmd,
+            args=(socket_serveur,)).start()
+        except KeyboardInterrupt:
+            break
+
+
+for t in threading.enumerate():
+    if t != threading.main_thread(): t.join
+
 sys.exit(0)

@@ -13,6 +13,8 @@ class User():
 
         self.state = state
         self.connected = connected
+        self.channel = []
+        self.requestChannel = []
 
     def __str__(self):
         s = "Username : " + self.username + "\nSocket : " + str(self.socket) + "\nState : " + self.state
@@ -38,3 +40,21 @@ class User():
     
     def getUsername(self):
         return self.username
+    
+    def setUsername(self, new_username):
+        self.username = new_username
+
+    def getChannel(self):
+        return self.channel
+    
+    def addUserToChannel(self, user):
+        self.channel.append(user)
+
+    def getRequestChannel(self):
+        return self.requestChannel
+    
+    def addUserToRequestChannel(self, user):
+        self.requestChannel.append(user)
+
+    def removeUserFromRequestChannel(self, user):
+        self.channel.remove(user)
