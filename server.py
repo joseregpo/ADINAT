@@ -17,7 +17,7 @@ def traiter_client(sock_fille):
             case "msg":
                 msg(mess, sock_fille)
             case "msgpv":
-                msgpv(mess, sock_fille)
+                msgpv(mess[1], sock_fille)
             case "exit":
                 exit(mess, sock_fille)
             case "afk":
@@ -58,25 +58,25 @@ def help(mess, sock_fille):
 
 
 def signup(mess, sock_fille):
-    state = getState(sock_fille)
-    print(state)
-    if state == "btk":
-        sock_fille.sendall("416".encode())
-    elif state == "afk":
-        sock_fille.sendall("415".encode())
+    connected = getConnected(sock_fille)
+
+    if connected:
+        sock_fille.sendall("417".encode())
     elif len(mess) != 2:
         sock_fille.sendall("403".encode())
     else:
         username = mess[1]
-        usernameIsTaken = verifyUsernameIsNotAlreadyTaken(username)
-        if not usernameIsTaken:
-            user = User(username, sock_fille)
-            user.setState("btk")
-            users.append(user)
-            signupFromSrv(username, sock_fille)
-            sock_fille.sendall("200".encode())
+        if not username.isalpha():
+            sock_fille.sendall("426".encode())
         else:
-            sock_fille.sendall("425".encode())
+            usernameIsTaken = verifyUsernameIsNotAlreadyTaken(username)
+            if not usernameIsTaken:
+                user = User(username, sock_fille, "btk", True)
+                users.append(user)
+                signupFromSrv(username, sock_fille)
+                sock_fille.sendall("200".encode())
+            else:
+                sock_fille.sendall("425".encode())
 
 def signupFromSrv(username, sock_fille):
     for i in range (len(users)):
@@ -87,13 +87,15 @@ def signupFromSrv(username, sock_fille):
 
 
 def msg(mess, sock_fille):
+    connected = getConnected(sock_fille)
     state = getState(sock_fille)
-    print(mess)
-    if state == "afk":
-        sock_fille.sendall("415".encode())
+    if not connected:
+        sock_fille.sendall("418".encode())
+    elif state == "afk":
+        sock_fille.sendall("430".encode())
     else:
         username = getUsername(sock_fille)
-        if len(mess) != 1:
+        if len(mess) != 2:
             sock_fille.sendall("403".encode())
         else:
             msgFromSrv(username, mess, sock_fille)
@@ -108,27 +110,43 @@ def msgFromSrv(username, message, sock_fille):
 
 
 def msgpv(mess, sock_fille):
+    connected = getConnected()
     state = getState(sock_fille)
-    if state == "afk":
-        sock_fille.sendall("415".encode())
+    mess = mess.split(" ", 1)
+    dest_username = mess[0]
+    message = mess[1]
+
+    dest_user = getDest(dest_username)
+
+    if not connected:
+        sock_fille.sendall("418".encode())
+    elif not dest_user.getConnected():
+        sock_fille.sendall("406".encode())
+    elif state == "afk":
+        sock_fille.sendall("430".encode())
     else:
-        username = getUsername(sock_fille)
-        mess = mess.split(" ", 1)
-        dest = mess[0]
-        message = mess[1]
+        msgFromSrv()
+
+def msgpvFromSrv(dest_user, message):
+    dest_sock = dest_user.getSocket()
+    dest_sock.sendall(message)
 
 
 def exit(mess, sock_fille):
     sock_fille.sendall(mess.upper())
 
 def afk(sock_fille):
-    for i in range (len(users)):
-        if users[i].getSocket() == sock_fille:
-            users[i].setState("afk")
-            break
+    state = getState(sock_fille)
+    if state == "afk":
+        sock_fille.sendall("415".encode())
+    else:
+        for i in range (len(users)):
+            if users[i].getSocket() == sock_fille:
+                users[i].setState("afk")
+                break
 
-    afkFromSrv(sock_fille)
-    sock_fille.sendall("200".encode())
+        afkFromSrv(sock_fille)
+        sock_fille.sendall("200".encode())
 
 def afkFromSrv(sock_fille):
     username = getUsername(sock_fille)
@@ -138,13 +156,17 @@ def afkFromSrv(sock_fille):
 
 
 def btk(sock_fille):
-    for i in range (len(users)):
-        if users[i].getSocket() == sock_fille:
-            users[i].setState("btk")
-            break
+    state = getState(sock_fille)
+    if state == "btk":
+        sock_fille.sendall("416".encode())
+    else:
+        for i in range (len(users)):
+            if users[i].getSocket() == sock_fille:
+                users[i].setState("btk")
+                break
 
-    btkFromSrv(sock_fille)
-    sock_fille.sendall("200".encode())
+        btkFromSrv(sock_fille)
+        sock_fille.sendall("200".encode())
 
 def btkFromSrv(sock_fille):
     username = getUsername(sock_fille)
@@ -182,6 +204,12 @@ def declinefile(mess, sock_fille):
     sock_fille.sendall(mess.upper())
 
 
+def getDest(username):
+    for i in range(len(users)):
+        if users[i].getUsername() == username:
+            return users[i]
+    return None
+
 def getUsername(sock_fille):
     for i in range (len(users)):
         if users[i].getSocket() == sock_fille:
@@ -202,6 +230,12 @@ def getState(sock_fille):
         if users[i].getSocket() == sock_fille:
             return users[i].getState()
     return None
+
+def getConnected(sock_fille):
+    for i in range(len(users)):
+        if users[i].getSocket() == sock_fille:
+            return users[i].getConnected()
+    return False
         
 def verifyUsernameIsNotAlreadyTaken(username):
     for i in range (len(users)):

@@ -37,7 +37,7 @@ def talk_to_server(socket):
         reponse = reponse.decode()
         reponse.split("|", 1)
         if reponse[0] != "200" :
-            print("Erreur :" + reponse)
+            print(reponse)
         else:
         #Traitement des messages constants du serveur
             match commande:
