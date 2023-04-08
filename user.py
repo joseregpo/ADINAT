@@ -15,6 +15,8 @@ class User():
         self.connected = connected
         self.channel = []
         self.requestChannel = []
+        self.sharefile = []
+        self.requestSharefile = []
 
     def __str__(self):
         s = "Username : " + self.username + "\nSocket : " + str(self.socket) + "\nState : " + self.state
@@ -57,4 +59,4 @@ class User():
         self.requestChannel.append(user)
 
     def removeUserFromRequestChannel(self, user):
-        self.channel.remove(user)
+        self.requestChannel.remove(user)

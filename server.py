@@ -28,7 +28,7 @@ def traiter_client(sock_fille):
                 else:
                     sock_fille.sendall("403".encode())
             case "exit":
-                exit(mess, sock_fille)
+                exit(sock_fille)
             case "afk":
                 afk(sock_fille)
             case "btk":
@@ -154,15 +154,17 @@ def msgpv(mess, sock_fille):
     else:
         dest_username = mess[0]
         dest_user = getUserByUsername(dest_username)
-        channelExists = verifyChannelExists(sock_fille, dest_user)
-        print("Channel exists " + str(channelExists))
-        if channelExists:
-            my_username = getUsername(sock_fille)
-            message = mess[1]
-            msgpvFromSrv(dest_user, message, my_username)
-            sock_fille.sendall("200".encode())            
+        if dest_user is not None:
+            channelExists = verifyChannelExists(sock_fille, dest_user)
+            if channelExists:
+                my_username = getUsername(sock_fille)
+                message = mess[1]
+                msgpvFromSrv(dest_user, message, my_username)
+                sock_fille.sendall("200".encode())            
+            else:
+                sock_fille.sendall("440".encode())
         else:
-            sock_fille.sendall("440".encode())
+            sock_fille.sendall("402".encode())
 
 def msgpvFromSrv(dest_user, message, username):
     dest_user.getSocket().sendall(("msgpvFromSrv|"+username+"|"+message).encode())
@@ -314,8 +316,6 @@ def acceptchannel(mess, sock_fille):
             user.removeUserFromRequestChannel(sender)
             sender.addUserToChannel(user)
             sender.removeUserFromRequestChannel(user)
-            print(user.getChannel())
-            print(sender.getChannel())
             acceptedchannelFromSrv(sender, user)
             sock_fille.sendall("200".encode())
         else:
@@ -359,8 +359,27 @@ def acceptfile(mess, sock_fille):
 def declinefile(mess, sock_fille):
     sock_fille.sendall(mess.upper())
 
-def exit(mess, sock_fille):
-    sock_fille.sendall(mess.upper())
+def exit(sock_fille):
+    connected = getConnected(sock_fille)
+    state = getState(sock_fille)
+    if not connected:
+        sock_fille.sendall("418".encode())
+    elif state == "afk":
+        sock_fille.sendall("430".encode())
+    else:
+        user = getUser(sock_fille)
+        removeFromUserslist(user)
+        exitFromSrv(sock_fille, user.getUsername())
+        sock_fille.sendall("200".encode())
+        sock_fille.close()
+        for t in threading.enumerate():
+            if t != threading.main_thread(): 
+                t.join
+
+def exitFromSrv(sock_fille, username):
+    for i in range (len(users)):
+        if users[i].getSocket() != sock_fille:
+            users[i].getSocket().sendall(("exitedFromSrv|"+username).encode())
 
 
 
@@ -413,10 +432,12 @@ def verifyUsernameIsNotAlreadyTaken(username):
 
 def verifyChannelExists(sock_fille, user):
     me = getUser(sock_fille)
-    print(me.getChannel())
     if user in me.getChannel():
         return True
     return False
+
+def removeFromUserslist(user):
+    users.remove(user)
 
 
 

@@ -51,7 +51,6 @@ def listen_server_cmd(sock):
             
             else:
                 if r_formatted[0] not in commands_from_srv:
-                    print(r_formatted)
                     command = lastCommand.split(' ')
                     match command[0]:
                         case "help":
