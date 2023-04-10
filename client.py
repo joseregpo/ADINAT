@@ -32,6 +32,7 @@ username = ""
 lastCommand = ""
 liste_msg = []
 liste_msg_pv = []
+
 #Methodes
 def listen_server_cmd(sock):
     global lastCommand, username, liste_msg, reponses_possibles, commands_from_srv, liste_msg_pv
@@ -79,7 +80,7 @@ def listen_server_cmd(sock):
                         case "users":
                             print(r_formatted[1])
                         case "rename":
-                            print("You were been renamed")
+                            print("You have been renamed")
                             # username = lastCommand.split(" ", 1)
                             # username = username[1]
                         case "ping":
@@ -142,8 +143,8 @@ def talk_to_server(sock):
             cmd = input("$ ")
             if cmd.upper() == "QUIT":
                 break
-            sock.sendall(cmd.encode())
             lastCommand = cmd
+            sock.sendall(cmd.encode())
     
 
 # Create a socket object

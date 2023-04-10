@@ -1,0 +1,10 @@
+* 
+    acceptchannel --> ValueError: list.remove(x) not in list
+    cela plainte le serveur
+
+
+** 
+    msgpv renvoi 440
+
+** 
+    Si un user change son username, faut mettre à jour le tableau de channel quand on reçoit la commande renameFromSrv

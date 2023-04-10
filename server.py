@@ -152,6 +152,7 @@ def msgpv(mess, sock_fille):
     elif len(mess) != 2:
         sock_fille.sendall("403".encode())
     else:
+        
         dest_username = mess[0]
         dest_user = getUserByUsername(dest_username)
         if dest_user is not None:
@@ -197,13 +198,13 @@ def btk(sock_fille):
     state = getState(sock_fille)
     if not connected:
         sock_fille.sendall("418".encode())
-    elif state == "afk":
-        sock_fille.sendall("415".encode())
+    elif state == "btk":
+        sock_fille.sendall("416".encode())
     else:
         for i in range (len(users)):
             if users[i].getSocket() == sock_fille:
                 users[i].setState("btk")
-                break
+                break #On va se faire engueller si on fait ça comme ça, faudrait plutôt qu'on fasse un while si on fait un break, c'est un algo de recherche
 
         btkFromSrv(sock_fille)
         sock_fille.sendall("200".encode())
