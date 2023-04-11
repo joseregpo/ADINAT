@@ -32,12 +32,12 @@ username = ""
 lastCommand = ""
 liste_msg = []
 liste_msg_pv = []
-
+run_program = True
 #Methodes
 def listen_server_cmd(sock):
-    global lastCommand, username, liste_msg, reponses_possibles, commands_from_srv, liste_msg_pv
+    global lastCommand, username, liste_msg, reponses_possibles, commands_from_srv, liste_msg_pv, run_program
     with sock:
-        while True:
+        while run_program:
             reponse = sock.recv(1024)
             reponse = reponse.decode()
             r_formatted = reponse.split("|")
@@ -73,6 +73,7 @@ def listen_server_cmd(sock):
                             #     print(mess)
                         case "exit":
                             print("You are now offline")
+                            run_program = False
                         case "afk":
                             print("You are now afk")
                         case "btk":
@@ -137,15 +138,18 @@ def listen_server_cmd(sock):
 
 
 def talk_to_server(sock):
-    global lastCommand, username, liste_msg
-    with sock:
-        while True:
-            cmd = input("$ ")
-            if cmd.upper() == "QUIT":
-                break
-            lastCommand = cmd
-            sock.sendall(cmd.encode())
-    
+    global lastCommand, username, liste_msg, run_program
+    while True:
+        if lastCommand == "exit":
+            break
+        cmd = input("$ ")
+        lastCommand = cmd
+        sock.sendall(cmd.encode())
+
+# sharefile <username> <file path> <port>
+def send_file(port, file):
+
+    pass
 
 # Create a socket object
 # with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
