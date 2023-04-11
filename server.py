@@ -5,78 +5,81 @@ from user import *
 
 def traiter_client(sock_fille):
     while True:
-        mess = sock_fille.recv(1024)
-        mess = mess.decode()
-        mess = mess.split(" ", 1)
-        
-        match mess[0]:
-            case "help":
-                help(mess, sock_fille)
-            case "signup":
-                if len(mess) != 1:
-                    signup(mess, sock_fille)
-                else:
-                    sock_fille.sendall("403".encode())
-            case "msg":
-                if len(mess) != 1:
-                    msg(mess, sock_fille)
-                else:
-                    sock_fille.sendall("403".encode())
-            case "msgpv":
-                if len(mess) != 1:
-                    msgpv(mess, sock_fille)
-                else:
-                    sock_fille.sendall("403".encode())
-            case "exit":
-                exit(sock_fille)
-            case "afk":
-                afk(sock_fille)
-            case "btk":
-                btk(sock_fille)
-            case "users":
-                getUsers(sock_fille)
-            case "rename":
-                if len(mess) != 1:
-                    rename(mess, sock_fille)
-                else:
-                    sock_fille.sendall("403".encode())
-            case "ping":
-                if len(mess) != 1:
-                    ping(mess, sock_fille)
-                else:
-                    sock_fille.sendall("403".encode())
-            case "channel":
-                if len(mess) != 1:
-                    channel(mess, sock_fille)
-                else:
-                    sock_fille.sendall("403".encode())
-            case "acceptchannel":
-                if len(mess) != 1:
-                    acceptchannel(mess, sock_fille)
-                else:
-                    sock_fille.sendall("403".encode())
-            case "declinechannel":
-                if len(mess) != 1:
-                    declinechannel(mess, sock_fille)
-                else:
-                    sock_fille.sendall("403".encode())
-            case "sharefile":
-                if len(mess) != 1:
-                    sharefile(mess, sock_fille)
-                else:
-                    sock_fille.sendall("403".encode())
-            case "acceptfile":
-                if len(mess) != 1:
-                    acceptfile(mess, sock_fille)
-                else:
-                    sock_fille.sendall("403".encode())
-            case "declinefile":
-                if len(mess) != 1:
-                    declinefile(mess, sock_fille)
-                else:
-                    sock_fille.sendall("403".encode())
-            case other:
-                sock_fille.sendall("400".encode())
+        try:
+            mess = sock_fille.recv(1024)
+            mess = mess.decode()
+            mess = mess.split(" ", 1)
+            
+            match mess[0]:
+                case "help":
+                    help(mess, sock_fille)
+                case "signup":
+                    if len(mess) != 1:
+                        signup(mess, sock_fille)
+                    else:
+                        sock_fille.sendall("403".encode())
+                case "msg":
+                    if len(mess) != 1:
+                        msg(mess, sock_fille)
+                    else:
+                        sock_fille.sendall("403".encode())
+                case "msgpv":
+                    if len(mess) != 1:
+                        msgpv(mess, sock_fille)
+                    else:
+                        sock_fille.sendall("403".encode())
+                case "exit":
+                    exit(sock_fille)
+                case "afk":
+                    afk(sock_fille)
+                case "btk":
+                    btk(sock_fille)
+                case "users":
+                    getUsers(sock_fille)
+                case "rename":
+                    if len(mess) != 1:
+                        rename(mess, sock_fille)
+                    else:
+                        sock_fille.sendall("403".encode())
+                case "ping":
+                    if len(mess) != 1:
+                        ping(mess, sock_fille)
+                    else:
+                        sock_fille.sendall("403".encode())
+                case "channel":
+                    if len(mess) != 1:
+                        channel(mess, sock_fille)
+                    else:
+                        sock_fille.sendall("403".encode())
+                case "acceptchannel":
+                    if len(mess) != 1:
+                        acceptchannel(mess, sock_fille)
+                    else:
+                        sock_fille.sendall("403".encode())
+                case "declinechannel":
+                    if len(mess) != 1:
+                        declinechannel(mess, sock_fille)
+                    else:
+                        sock_fille.sendall("403".encode())
+                case "sharefile":
+                    if len(mess) != 1:
+                        sharefile(mess, sock_fille)
+                    else:
+                        sock_fille.sendall("403".encode())
+                case "acceptfile":
+                    if len(mess) != 1:
+                        acceptfile(mess, sock_fille)
+                    else:
+                        sock_fille.sendall("403".encode())
+                case "declinefile":
+                    if len(mess) != 1:
+                        declinefile(mess, sock_fille)
+                    else:
+                        sock_fille.sendall("403".encode())
+                case other:
+                    sock_fille.sendall(("400|"+allCommands).encode())
+        except:
+            break
 
 def help(mess, sock_fille):
     connected = getConnected(sock_fille)
@@ -86,7 +89,7 @@ def help(mess, sock_fille):
     elif state == "afk":
         sock_fille.sendall("415".encode())
     else:
-        sock_fille.sendall("200|signup <username> : allows you to login into the chatroom\n msg <message> : sends a message in the global chatroom,\n msgpv <username>  <user> : sends a message to someone,\n exit : allows you to leave the chatroom,\n afk : avoid you to sends message in the chatroom,\n btk : allows you to send message in the chatroom if you were afk,\n users : Notifies which clients are connected to the server,\n rename <username> : allows you to change your name,\n ping <username> : sends a ping to a user,\n channel <username> : demands the specified user to create a private channel with him,\n acceptchannel <username> : accept the channel creation demand,\n declinechannel <username> : refuse the channel creation demand,\n sharefile <username> <namefile> : Share a file to someone but he has to accept,\n acceptfile <username> <namefile> : accept the file that has been shared by a user,\n declinefile <username> <namefile> : refuse the file that has benn shared by a user\n".encode())
+        sock_fille.sendall(("200|"+allCommands).encode())
 
 
 
@@ -373,9 +376,10 @@ def exit(sock_fille):
         exitFromSrv(sock_fille, user.getUsername())
         sock_fille.sendall("200".encode())
         sock_fille.close()
-        for t in threading.enumerate():
-            if t != threading.main_thread(): 
-                t.join
+        sock_exists = False
+        # for t in threading.enumerate():
+        #     if t != threading.main_thread(): 
+        #         t.join
 
 def exitFromSrv(sock_fille, username):
     for i in range (len(users)):
@@ -443,6 +447,10 @@ def removeFromUserslist(user):
 
 
 users = []
+
+allCommands = "signup <username> : allows you to login into the chatroom\n msg <message> : sends a message in the global chatroom,\n msgpv <username>  <user> : sends a message to someone,\n exit : allows you to leave the chatroom,\n afk : avoid you to sends message in the chatroom,\n btk : allows you to send message in the chatroom if you were afk,\n users : Notifies which clients are connected to the server,\n rename <username> : allows you to change your name,\n ping <username> : sends a ping to a user,\n channel <username> : demands the specified user to create a private channel with him,\n acceptchannel <username> : accept the channel creation demand,\n declinechannel <username> : refuse the channel creation demand,\n sharefile <username> <namefile> : Share a file to someone but he has to accept,\n acceptfile <username> <namefile> : accept the file that has been shared by a user,\n declinefile <username> <namefile> : refuse the file that has benn shared by a user\n"
+
+sock_exists = True
 
 with socket.socket() as sock_locale:
     sock_locale.bind(("", int(sys.argv[1])))
