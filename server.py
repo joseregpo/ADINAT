@@ -2,6 +2,8 @@ import socket
 import sys
 import threading
 from user import *
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 def traiter_client(sock_fille):
     while True:
@@ -407,7 +409,7 @@ def share_file_from_srv(dest_user, user, file_size, file_name, port):
     sockt = adr_src.getsockname()
     print("sockt ", sockt)
     dest_user.getSocket().sendall(("sharefileFromSrv|"+str(user.getUsername())+"|"+str(file_name)+"|"+str(file_size)+"|"+str(sockt[0])+"|"+str(port)+str(sockt[1])).encode())
-    # pass
+
 def acceptfile(mess, sock_fille):
     sock_fille.sendall(mess.upper())
 
@@ -508,10 +510,6 @@ with socket.socket() as sock_locale:
             args=(sock_client,)).start()
         except KeyboardInterrupt:
             break
-
-print("Bye")
-
-
 
 for t in threading.enumerate():
     if t != threading.main_thread(): 
