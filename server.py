@@ -398,10 +398,10 @@ def sharefile(mess, sock_fille):
             sock_fille.sendall("402".encode()) 
 
 def share_file_from_srv(dest_user, user, file_size, file_name, port):
-    user.add_to_requested_rq_sharefile(dest_user, file_name)
+    user.addToRequestSharefile(dest_user, file_name)
     print("user " ,user.getUsername)
     print("file_name ", file_name)
-    dest_user.add_to_requested_rq_sharefile(user, file_name)
+    dest_user.addToRequestSharefile(user, file_name)
     adr_src = user.getSocket()
     print("adr_src ", adr_src)
     sockt = adr_src.getsockname()
