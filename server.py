@@ -181,10 +181,12 @@ def afk(sock_fille):
     elif state == "afk":
         sock_fille.sendall("415".encode())
     else:
-        for i in range (len(users)):
+        i = 0
+        while i < len(users):
             if users[i].getSocket() == sock_fille:
                 users[i].setState("afk")
                 break
+            i += 1
 
         afkFromSrv(sock_fille)
         sock_fille.sendall("200".encode())
@@ -204,10 +206,12 @@ def btk(sock_fille):
     elif state == "btk":
         sock_fille.sendall("416".encode())
     else:
-        for i in range (len(users)):
+        i = 0
+        while i < len(users):
             if users[i].getSocket() == sock_fille:
                 users[i].setState("btk")
-                break #On va se faire engueller si on fait ça comme ça, faudrait plutôt qu'on fasse un while si on fait un break, c'est un algo de recherche
+                break
+            i += 1
 
         btkFromSrv(sock_fille)
         sock_fille.sendall("200".encode())
@@ -227,7 +231,11 @@ def getUsers(sock_fille):
         sock_fille.sendall("430".encode())
     else:
         usersname = getAllUsersname(sock_fille)
-        sock_fille.sendall(("200|"+str(usersname)).encode())
+        getUsersFromSrv(sock_fille, usersname)
+        sock_fille.sendall("200".encode())
+
+def getUsersFromSrv(sock_fille, usersname):
+    sock_fille.sendall(("usersFromSrv|"+str(usersname)).encode())
 
 def rename(mess, sock_fille):
     connected = getConnected(sock_fille)
@@ -289,13 +297,17 @@ def channel(mess, sock_fille):
     elif len(mess) != 1:
         sock_fille.sendall("403".encode())
     else:
-        dest_user = getUserByUsername(mess[0])
-        if dest_user is not None:
-            user = getUser(sock_fille)
-            channelFromSrv(dest_user, user)
-            sock_fille.sendall("200".encode())
+        my_user = getUser(sock_fille)
+        if my_user.getUsername() == mess[0]:
+            sock_fille.sendall("407".encode())
         else:
-            sock_fille.sendall("402".encode())        
+            dest_user = getUserByUsername(mess[0])
+            if dest_user is not None:
+                user = getUser(sock_fille)
+                channelFromSrv(dest_user, user)
+                sock_fille.sendall("200".encode())
+            else:
+                sock_fille.sendall("402".encode())        
 
 def channelFromSrv(dest_user, user):
     dest_user.addUserToRequestChannel(user)
@@ -316,12 +328,17 @@ def acceptchannel(mess, sock_fille):
         sender = getUserByUsername(mess[0])
         user = getUser(sock_fille)
         if sender is not None:
-            user.addUserToChannel(sender)
-            user.removeUserFromRequestChannel(sender)
-            sender.addUserToChannel(user)
-            sender.removeUserFromRequestChannel(user)
-            acceptedchannelFromSrv(sender, user)
-            sock_fille.sendall("200".encode())
+            userRequestChannel = user.getRequestChannel()
+            senderRequestChannel = sender.getRequestChannel()
+            if sender in userRequestChannel and user in senderRequestChannel:
+                user.addUserToChannel(sender)
+                user.removeUserFromRequestChannel(sender)
+                sender.addUserToChannel(user)
+                sender.removeUserFromRequestChannel(user)
+                acceptedchannelFromSrv(sender, user)
+                sock_fille.sendall("200".encode())
+            else:
+                sock_fille.sendall("444".encode())
         else:
             sock_fille.sendall("402".encode())
 
@@ -343,8 +360,13 @@ def declinechannel(mess, sock_fille):
         sender = getUserByUsername(mess[0])
         user = getUser(sock_fille)
         if sender is not None:
-            declinedchannelFromSrv(sender, user)
-            sock_fille.sendall("200".encode())
+            userRequestChannel = user.getRequestChannel()
+            senderRequestChannel = sender.getRequestChannel()
+            if sender in userRequestChannel and user in senderRequestChannel:
+                declinedchannelFromSrv(sender, user)
+                sock_fille.sendall("200".encode())
+            else:
+                sock_fille.sendall("444".encode())
         else:
             sock_fille.sendall("402".encode())
 
@@ -376,10 +398,6 @@ def exit(sock_fille):
         exitFromSrv(sock_fille, user.getUsername())
         sock_fille.sendall("200".encode())
         sock_fille.close()
-        sock_exists = False
-        # for t in threading.enumerate():
-        #     if t != threading.main_thread(): 
-        #         t.join
 
 def exitFromSrv(sock_fille, username):
     for i in range (len(users)):
@@ -449,8 +467,6 @@ def removeFromUserslist(user):
 users = []
 
 allCommands = "signup <username> : allows you to login into the chatroom\n msg <message> : sends a message in the global chatroom,\n msgpv <username>  <user> : sends a message to someone,\n exit : allows you to leave the chatroom,\n afk : avoid you to sends message in the chatroom,\n btk : allows you to send message in the chatroom if you were afk,\n users : Notifies which clients are connected to the server,\n rename <username> : allows you to change your name,\n ping <username> : sends a ping to a user,\n channel <username> : demands the specified user to create a private channel with him,\n acceptchannel <username> : accept the channel creation demand,\n declinechannel <username> : refuse the channel creation demand,\n sharefile <username> <namefile> : Share a file to someone but he has to accept,\n acceptfile <username> <namefile> : accept the file that has been shared by a user,\n declinefile <username> <namefile> : refuse the file that has benn shared by a user\n"
-
-sock_exists = True
 
 with socket.socket() as sock_locale:
     sock_locale.bind(("", int(sys.argv[1])))
