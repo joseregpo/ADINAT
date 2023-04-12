@@ -52,6 +52,7 @@ def listen_server_cmd(sock):
                     print(r_formatted[0] + " : " + reponses_possibles[r_formatted[0]])
                 
                 else:
+                    print(r_formatted)
                     if r_formatted[0] not in commands_from_srv:
                         command = lastCommand.split(' ')
                         match command[0]:
@@ -88,13 +89,13 @@ def listen_server_cmd(sock):
                             case "ping":
                                 print("You pinged someone")
                             case "channel":
-                                print("Your request channel has been sent")
+                                print("Your request for a private channel has been sent")
                             case "acceptchannel":
                                 print("Your request channel has been accepted")
                             case "declinechannel":
                                 print("Your request channel has been declined")
                             case "sharefile":
-                                pass
+                                print("Your request to send a file  has been sent")
                             case "acceptfile":
                                 pass
                             case "declinefile":
@@ -119,7 +120,7 @@ def listen_server_cmd(sock):
                             case "btkFromSrv":
                                 print(f"{r_formatted[1]} is back to the party !")
                             case "usersFromSrv":
-                                pass
+                                print(f"Liste des utilisateurs {r_formatted[1]}")
                             case "renameFromSrv":
                                 print(f"{r_formatted[1]} changed his name to {r_formatted[2]}")
                             case "pingFromSrv":
@@ -132,6 +133,7 @@ def listen_server_cmd(sock):
                                 print(f"{r_formatted[1]} doesn't want to be alone with you :( ")
                             case "sharefileFromSrv":
                                 print(f"{r_formatted[1]} wants to send you a file")
+                                print(f"{r_formatted}")
                             case "acceptedfileFromSrv":
                                 print(f"{r_formatted[1]} has accepted to receive your file")
                             case "declinedfileFromSrv":

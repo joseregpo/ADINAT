@@ -8,3 +8,6 @@
 
 ** 
     Si un user change son username, faut mettre à jour le tableau de channel quand on reçoit la commande renameFromSrv
+
+** 
+    Revoir nombre de params pour chaque commande dans le match du serveur

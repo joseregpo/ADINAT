@@ -60,3 +60,6 @@ class User():
 
     def removeUserFromRequestChannel(self, user):
         self.requestChannel.remove(user)
+
+    def add_to_requested_rq_sharefile(self, user, file_name):
+        self.requestSharefile.append((user,file_name))

@@ -355,8 +355,37 @@ def declinedchannelFromSrv(sender, user):
     sender.getSocket().sendall(("declinedchannelFromSrv|"+user.getUsername()).encode())
 
 def sharefile(mess, sock_fille):
-    sock_fille.sendall(mess.upper())
+    connected = getConnected(sock_fille)
+    state = getState(sock_fille)
+    mess = mess[1].split(" ")
+    if not connected:
+        sock_fille.sendall("418".encode())
+    elif state == "afk":
+        sock_fille.sendall("430".encode())
+    elif len(mess) != 3:
+        sock_fille.sendall("403".encode())
+    else:
+        dest_user = getUserByUsername(mess[0])
+        if dest_user is not None:
+            user = getUser(sock_fille)
+            print(user)
+            print(mess[1])
+            share_file_from_srv(dest_user, user, "50", mess[1], mess[2]) 
+            sock_fille.sendall("200".encode())
+        else:
+            sock_fille.sendall("402".encode()) 
 
+def share_file_from_srv(dest_user, user, file_size, file_name, port):
+    user.add_to_requested_rq_sharefile(dest_user, file_name)
+    print("user " ,user.getUsername)
+    print("file_name ", file_name)
+    dest_user.add_to_requested_rq_sharefile(user, file_name)
+    adr_src = user.getSocket()
+    print("adr_src ", adr_src)
+    sockt = adr_src.getsockname()
+    print("sockt ", sockt)
+    dest_user.getSocket().sendall(("sharefileFromSrv|"+str(user.getUsername())+"|"+str(file_name)+"|"+str(file_size)+"|"+str(sockt[0])+"|"+str(port)+str(sockt[1])).encode())
+    # pass
 def acceptfile(mess, sock_fille):
     sock_fille.sendall(mess.upper())
 
