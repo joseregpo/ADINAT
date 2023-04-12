@@ -15,8 +15,8 @@ class User():
         self.connected = connected
         self.channel = []
         self.requestChannel = []
-        self.sharefile = []
-        self.requestSharefile = []
+        self.sharefile = {}
+        self.requestSharefile = {}
 
     def __str__(self):
         s = "Username : " + self.username + "\nSocket : " + str(self.socket) + "\nState : " + self.state
@@ -25,6 +25,9 @@ class User():
     def __eq__(self, user):
         return self.username == user.username
     
+    def __hash__(self):
+        return self.socket.__hash__()
+
     def setState(self, state):
         self.state = state
 
@@ -65,28 +68,34 @@ class User():
         return self.sharefile
     
     def addToSharefile(self, user, file):
-        d = {}
-        f = [file]
-        d[user].extend(f)
-        self.sharefile.append(d)
+        f = [file]        
+        if user in self.sharefile.keys():
+            self.sharefile[user].extend(f)
+        else:
+            self.sharefile[user] = f
 
     def getRequestSharefile(self):
         return self.requestSharefile
     
     def addToRequestSharefile(self, user, file):
-        d = {}
-        f = [file]
-        d[user].extend(f)
-        self.requestSharefile.append(d)
+        f = [file]        
+        if user in self.requestSharefile.keys():
+            self.requestSharefile[user].extend(f)
+        else:
+            self.requestSharefile[user] = f
 
     def removeFromRequestSharefile(self, user, file):
-        for i in range (len(self.requestSharefile)):
-            for k, v in i.items():
-                if k == user:
-                    if file in v:
-                        v.remove(file)
-                        return
-                        
+        for k,v in self.requestSharefile.items():
+            if k == user and file in v:
+                v.remove(file)
+                return
 
+        # for i in range (len(self.requestSharefile)):
+        #     for k, v in i.items():
+        #         if k == user:
+        #             if file in v:
+        #                 v.remove(file)
+        #                 return
+                        
 
 
