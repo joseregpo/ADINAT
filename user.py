@@ -22,8 +22,8 @@ class User():
         s = "Username : " + self.username + "\nSocket : " + str(self.socket) + "\nState : " + self.state
         return s
     
-    # def __eq__(self, user):
-    #     return self.username == user.username and self.socket == user.socket
+    def __eq__(self, user):
+        return self.username == user.username
     
     def setState(self, state):
         self.state = state
@@ -61,5 +61,32 @@ class User():
     def removeUserFromRequestChannel(self, user):
         self.requestChannel.remove(user)
 
-    def add_to_requested_rq_sharefile(self, user, file_name):
-        self.requestSharefile.append((user,file_name))
+    def getSharefile(self):
+        return self.sharefile
+    
+    def addToSharefile(self, user, file):
+        d = {}
+        f = [file]
+        d[user].extend(f)
+        self.sharefile.append(d)
+
+    def getRequestSharefile(self):
+        return self.requestSharefile
+    
+    def addToRequestSharefile(self, user, file):
+        d = {}
+        f = [file]
+        d[user].extend(f)
+        self.requestSharefile.append(d)
+
+    def removeFromRequestSharefile(self, user, file):
+        for i in range (len(self.requestSharefile)):
+            for k, v in i.items():
+                if k == user:
+                    if file in v:
+                        v.remove(file)
+                        return
+                        
+
+
+
