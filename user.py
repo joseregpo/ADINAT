@@ -64,6 +64,11 @@ class User():
     def removeUserFromRequestChannel(self, user):
         self.requestChannel.remove(user)
 
+    def checkIfUserExistsInRequestChannel(self, user):
+        if user in self.requestChannel:
+            return True
+        return False
+
     def getSharefile(self):
         return self.sharefile
     
@@ -89,6 +94,13 @@ class User():
             if k == user and file in v:
                 v.remove(file)
                 return
+            
+
+    def checkIfFileExistsInRequestShareFile(self, user, file):
+        for k,v in self.requestSharefile.items():
+            if k == user and file in v:
+                return True
+        return False
 
         # for i in range (len(self.requestSharefile)):
         #     for k, v in i.items():
