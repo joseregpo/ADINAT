@@ -81,7 +81,8 @@ def listen_server_cmd(sock):
                             case "btk":
                                 print("You are now btk")
                             case "users":
-                                print(r_formatted[1])
+                                pass
+                                # print(r_formatted[1])
                             case "rename":
                                 print("You have been renamed")
                                 # username = lastCommand.split(" ", 1)

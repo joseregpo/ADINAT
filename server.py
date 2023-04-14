@@ -1,6 +1,8 @@
 import socket
 import sys
+import os
 import threading
+from datetime import datetime
 from user import User
 import signal
 import traceback
@@ -9,8 +11,10 @@ import logging
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 def traiter_client(sock_fille):
+    global able_to_use
     while True:
         try:
+            print(sock_fille)
             mess = sock_fille.recv(1024)
             mess = mess.decode()
             mess = mess.split(" ", 1)
@@ -20,68 +24,179 @@ def traiter_client(sock_fille):
                     help(mess, sock_fille)
                 case "signup":
                     if len(mess) != 1:
-                        signup(mess, sock_fille)
+                        with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            signup(mess, sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                     else:
+                        username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
+                        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        write_to_log_file(f"{username} signup ${dt} 403")
                         sock_fille.sendall("403".encode())
                 case "msg":
                     if len(mess) != 1:
-                        msg(mess, sock_fille)
+                         with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            msg(mess, sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                     else:
+                        username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
+                        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        write_to_log_file(f"{username} msg ${dt} 403")
                         sock_fille.sendall("403".encode())
                 case "msgpv":
                     if len(mess) != 1:
-                        msgpv(mess, sock_fille)
+                         with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            msgpv(mess, sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                     else:
+                        username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
+                        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        write_to_log_file(f"{username} msgpv ${dt} 403")
                         sock_fille.sendall("403".encode())
                 case "exit":
-                    exit(sock_fille)
+                     with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            exit(sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                 case "afk":
-                    afk(sock_fille)
+                     with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            afk(sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                 case "btk":
-                    btk(sock_fille)
+                     with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            btk(sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                 case "users":
-                    getUsers(sock_fille)
+                     with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            getUsers(sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                 case "rename":
                     if len(mess) != 1:
-                        rename(mess, sock_fille)
+                         with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            rename(mess, sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                     else:
+                        username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
+                        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        write_to_log_file(f"{username} rename ${dt} 403")
                         sock_fille.sendall("403".encode())
                 case "ping":
                     if len(mess) != 1:
-                        ping(mess, sock_fille)
+                         with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            ping(mess, sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                     else:
+                        username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
+                        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        write_to_log_file(f"{username} ping ${dt} 403")
                         sock_fille.sendall("403".encode())
                 case "channel":
                     if len(mess) != 1:
-                        channel(mess, sock_fille)
+                         with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            channel(mess, sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                     else:
+                        username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
+                        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        write_to_log_file(f"{username} channel ${dt} 403")
                         sock_fille.sendall("403".encode())
                 case "acceptchannel":
                     if len(mess) != 1:
-                        acceptchannel(mess, sock_fille)
+                         with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            acceptchannel(mess, sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                     else:
+                        username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
+                        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        write_to_log_file(f"{username} acceptchannel ${dt} 403")
                         sock_fille.sendall("403".encode())
                 case "declinechannel":
                     if len(mess) != 1:
-                        declinechannel(mess, sock_fille)
+                         with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            declinechannel(mess, sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                     else:
+                        username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
+                        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        write_to_log_file(f"{username} declinechannel ${dt} 403")
                         sock_fille.sendall("403".encode())
                 case "sharefile":
                     if len(mess) != 1:
-                        sharefile(mess, sock_fille)
+                         with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            sharefile(mess, sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                     else:
+                        username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
+                        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        write_to_log_file(f"{username} sharefile ${dt} 403")
                         sock_fille.sendall("403".encode())
                 case "acceptfile":
                     if len(mess) != 1:
-                        acceptfile(mess, sock_fille)
+                         with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            acceptfile(mess, sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                     else:
+                        username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
+                        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        write_to_log_file(f"{username} acceptfile ${dt} 403")
                         sock_fille.sendall("403".encode())
                 case "declinefile":
                     if len(mess) != 1:
-                        declinefile(mess, sock_fille)
+                         with lock_general:
+                            cond_general.wait_for(lambda: able_to_use)
+                            able_to_use = False
+                            declinefile(mess, sock_fille)
+                            able_to_use = True
+                            cond_general.notify_all()
                     else:
+                        username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
+                        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        write_to_log_file(f"{username} declinefile ${dt} 403")
                         sock_fille.sendall("403".encode())
                 case other:
+                    username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username} unknown command ${dt} 400")
                     sock_fille.sendall(("400|"+allCommands).encode())
         except Exception as e:
             logging.error(traceback.format_exc())
@@ -89,25 +204,38 @@ def traiter_client(sock_fille):
 def help(mess, sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username} help ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username} help ${dt} 415")
         sock_fille.sendall("415".encode())
     else:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username} help ${dt} 200")
         sock_fille.sendall(("200|"+allCommands).encode())
 
 
 
 def signup(mess, sock_fille):
     connected = getConnected(sock_fille)
-
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     if connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} signup ${dt} 417")
         sock_fille.sendall("417".encode())
     elif len(mess) != 2:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} signup ${dt} 403")
         sock_fille.sendall("403".encode())
     else:
         username = mess[1]
         if not username.isalpha():
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} signup ${dt} 426")
             sock_fille.sendall("426".encode())
         else:
             usernameIsTaken = verifyUsernameIsNotAlreadyTaken(username)
@@ -115,8 +243,12 @@ def signup(mess, sock_fille):
                 user = User(username, sock_fille, "btk", True)
                 users.append(user)
                 signupFromSrv(username, sock_fille)
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} signup ${dt} 200")
                 sock_fille.sendall("200".encode())
             else:
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} signup ${dt} 425")
                 sock_fille.sendall("425".encode())
 
 def signupFromSrv(username, sock_fille):
@@ -130,15 +262,24 @@ def signupFromSrv(username, sock_fille):
 def msg(mess, sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} msg ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} msg ${dt} 430")
         sock_fille.sendall("430".encode())
     elif len(mess) != 2:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} msg ${dt} 403")
         sock_fille.sendall("403".encode())
     else:
         username = getUsername(sock_fille)
         msgFromSrv(username, mess[1], sock_fille)
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} msg ${dt} 200")
         sock_fille.sendall("200".encode())
 
 def msgFromSrv(username, message, sock_fille):
@@ -152,12 +293,20 @@ def msgpv(mess, sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
     mess = mess[1].split(" ", 1)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
+
 
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} msgpv ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} msgpv ${dt} 430")
         sock_fille.sendall("430".encode())
     elif len(mess) != 2:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} msgpv ${dt} 403")
         sock_fille.sendall("403".encode())
     else:
         
@@ -169,10 +318,16 @@ def msgpv(mess, sock_fille):
                 my_username = getUsername(sock_fille)
                 message = mess[1]
                 msgpvFromSrv(dest_user, message, my_username)
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} msgpv ${dt} 200")
                 sock_fille.sendall("200".encode())            
             else:
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} msgpv ${dt} 440")
                 sock_fille.sendall("440".encode())
         else:
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} msgpv ${dt} 402")
             sock_fille.sendall("402".encode())
 
 def msgpvFromSrv(dest_user, message, username):
@@ -181,9 +336,14 @@ def msgpvFromSrv(dest_user, message, username):
 def afk(sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} afk ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} afk ${dt} 415")
         sock_fille.sendall("415".encode())
     else:
         i = 0
@@ -194,6 +354,8 @@ def afk(sock_fille):
             i += 1
 
         afkFromSrv(sock_fille)
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} afk ${dt} 200")
         sock_fille.sendall("200".encode())
 
 def afkFromSrv(sock_fille):
@@ -206,9 +368,14 @@ def afkFromSrv(sock_fille):
 def btk(sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} btk ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "btk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} btk ${dt} 416")
         sock_fille.sendall("416".encode())
     else:
         i = 0
@@ -219,6 +386,8 @@ def btk(sock_fille):
             i += 1
 
         btkFromSrv(sock_fille)
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} btk ${dt} 200")
         sock_fille.sendall("200".encode())
 
 def btkFromSrv(sock_fille):
@@ -230,13 +399,20 @@ def btkFromSrv(sock_fille):
 def getUsers(sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} users ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} users ${dt} 430")
         sock_fille.sendall("430".encode())
     else:
         usersname = getAllUsersname(sock_fille)
         getUsersFromSrv(sock_fille, usersname)
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} users ${dt} 200")
         sock_fille.sendall("200".encode())
 
 def getUsersFromSrv(sock_fille, usersname):
@@ -245,12 +421,19 @@ def getUsersFromSrv(sock_fille, usersname):
 def rename(mess, sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     mess = mess[1].split(" ")
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} rename ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} rename ${dt} 430")
         sock_fille.sendall("430".encode())
     elif len(mess) != 1:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} rename ${dt} 403")
         sock_fille.sendall("403".encode())
     else:
         new_username = mess[0]
@@ -260,8 +443,12 @@ def rename(mess, sock_fille):
             old_username = user.getUsername()
             user.setUsername(new_username)
             renameFromSrv(old_username, new_username, sock_fille)
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} rename ${dt} 200")
             sock_fille.sendall("200".encode())
         else:
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} rename ${dt} 425")
             sock_fille.sendall("425".encode())
 
 def renameFromSrv(old_username, new_username, sock_fille):
@@ -272,20 +459,31 @@ def renameFromSrv(old_username, new_username, sock_fille):
 def ping(mess, sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     mess = mess[1].split(" ")
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} ping ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} ping ${dt} 430")
         sock_fille.sendall("430".encode())
     elif len(mess) != 1:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} ping ${dt} 403")
         sock_fille.sendall("403".encode())
     else:
         username = getUsername(sock_fille)
         dest_user = getUserByUsername(mess[0])
         if dest_user is not None:
             pingFromSrv(dest_user, username)
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} ping ${dt} 200")
             sock_fille.sendall("200".encode())
         else:
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} ping ${dt} 402")
             sock_fille.sendall("402".encode())
 
 def pingFromSrv(dest_user, username):
@@ -294,24 +492,37 @@ def pingFromSrv(dest_user, username):
 def channel(mess, sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     mess = mess[1].split(" ")
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} channel ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} channel ${dt} 430")
         sock_fille.sendall("430".encode())
     elif len(mess) != 1:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} channel ${dt} 403")
         sock_fille.sendall("403".encode())
     else:
         my_user = getUser(sock_fille)
         if my_user.getUsername() == mess[0]:
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} channel ${dt} 407")
             sock_fille.sendall("407".encode())
         else:
             dest_user = getUserByUsername(mess[0])
             if dest_user is not None:
                 user = getUser(sock_fille)
                 channelFromSrv(dest_user, user)
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} channel ${dt} 200")
                 sock_fille.sendall("200".encode())
             else:
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} channel ${dt} 402")
                 sock_fille.sendall("402".encode())        
 
 def channelFromSrv(dest_user, user):
@@ -322,12 +533,19 @@ def channelFromSrv(dest_user, user):
 def acceptchannel(mess, sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     mess = mess[1].split(" ")
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} acceptchannel ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} acceptchannel ${dt} 430")
         sock_fille.sendall("430".encode())
     elif len(mess) != 1:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} acceptchannel ${dt} 403")
         sock_fille.sendall("403".encode())
     else:
         sender = getUserByUsername(mess[0])
@@ -341,10 +559,16 @@ def acceptchannel(mess, sock_fille):
                 sender.addUserToChannel(user)
                 sender.removeUserFromRequestChannel(user)
                 acceptedchannelFromSrv(sender, user)
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} acceptchannel ${dt} 200")
                 sock_fille.sendall("200".encode())
             else:
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} acceptchannel ${dt} 444")
                 sock_fille.sendall("444".encode())
         else:
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} acceptchannel ${dt} 402")
             sock_fille.sendall("402".encode())
 
 def acceptedchannelFromSrv(sender, user):
@@ -354,12 +578,19 @@ def acceptedchannelFromSrv(sender, user):
 def declinechannel(mess, sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     mess = mess[1].split(" ")
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} declinechannel ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} declinechannel ${dt} 430")
         sock_fille.sendall("430".encode())
     elif len(mess) != 1:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} declinechannel ${dt} 403")
         sock_fille.sendall("403".encode())
     else:
         sender = getUserByUsername(mess[0])
@@ -369,10 +600,16 @@ def declinechannel(mess, sock_fille):
             senderRequestChannel = sender.getRequestChannel()
             if sender in userRequestChannel and user in senderRequestChannel:
                 declinedchannelFromSrv(sender, user)
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} declinechannel ${dt} 200")
                 sock_fille.sendall("200".encode())
             else:
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} declinechannel ${dt} 444")
                 sock_fille.sendall("444".encode())
         else:
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} declinechannel ${dt} 402")
             sock_fille.sendall("402".encode())
 
 
@@ -384,12 +621,19 @@ def declinedchannelFromSrv(sender, user):
 def sharefile(mess, sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     mess = mess[1].split(" ")
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} sharefile ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} sharefile ${dt} 430")
         sock_fille.sendall("430".encode())
     elif len(mess) != 3:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} sharefile ${dt} 403")
         sock_fille.sendall("403".encode())
     else:
         dest_user = getUserByUsername(mess[0])
@@ -398,8 +642,12 @@ def sharefile(mess, sock_fille):
             print(user)
             print(mess[1])
             share_file_from_srv(dest_user, user, "50", mess[1], mess[2]) 
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} sharefile ${dt} 200")
             sock_fille.sendall("200".encode())
         else:
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} sharefile ${dt} 402")
             sock_fille.sendall("402".encode()) 
 
 def share_file_from_srv(dest_user, user, file_size, file_name, port):
@@ -417,12 +665,19 @@ def share_file_from_srv(dest_user, user, file_size, file_name, port):
 def acceptfile(mess, sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     mess = mess[1].split(" ")
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} acceptfile ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} acceptfile ${dt} 430")
         sock_fille.sendall("430".encode())
     elif len(mess) != 2:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} acceptfile ${dt} 403")
         sock_fille.sendall("403".encode())
     else:
         sender = getUserByUsername(mess[0])
@@ -431,10 +686,16 @@ def acceptfile(mess, sock_fille):
             userRequestSharefile = user.getRequestSharefile()
             if sender in userRequestSharefile:
                 acceptedfileFromSrv(sender, user, mess[1])
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} acceptfile ${dt} 200")
                 sock_fille.sendall("200".encode())
             else:
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} acceptfile ${dt} 200")
                 sock_fille.sendall("444".encode())
         else:
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} acceptfile ${dt} 402")
             sock_fille.sendall("402".encode())
 
 def acceptedfileFromSrv(sender, user, file):
@@ -445,12 +706,19 @@ def acceptedfileFromSrv(sender, user, file):
 def declinefile(mess, sock_fille):    
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     mess = mess[1].split(" ")
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} declinefile ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} declinefile ${dt} 430")
         sock_fille.sendall("430".encode())
     elif len(mess) != 2:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} declinefile ${dt} 403")
         sock_fille.sendall("403".encode())
     else:
         sender = getUserByUsername(mess[0])
@@ -459,10 +727,16 @@ def declinefile(mess, sock_fille):
             userRequestSharefile = user.getRequestSharefile()
             if sender in userRequestSharefile:
                 declinedFileFromSrv(sender, user, mess[1])
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} declinefile ${dt} 200")
                 sock_fille.sendall("200".encode())
             else:
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} declinefile ${dt} 444")
                 sock_fille.sendall("444".encode())
         else:
+            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            write_to_log_file(f"{username_or_ip} declinefile ${dt} 402")
             sock_fille.sendall("402".encode())
 
 def declinedFileFromSrv(sender, user, file):
@@ -472,14 +746,21 @@ def declinedFileFromSrv(sender, user, file):
 def exit(sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
+    username_or_ip = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     if not connected:
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} exit ${dt} 418")
         sock_fille.sendall("418".encode())
     elif state == "afk":
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} exit ${dt} 430")
         sock_fille.sendall("430".encode())
     else:
         user = getUser(sock_fille)
         removeFromUserslist(user)
         exitFromSrv(sock_fille, user.getUsername())
+        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        write_to_log_file(f"{username_or_ip} exit ${dt} 200")
         sock_fille.sendall("200".encode())
         sock_fille.close()
 
@@ -547,10 +828,30 @@ def removeFromUserslist(user):
     users.remove(user)
 
 
+def write_to_log_file(text_to_write):
+    global able_to_write
+    with lock_write_file:
+        cond_write_file.wait_for(lambda: able_to_write)
+        able_to_write = False
+        with open("server.log", "a") as server_file:
+            server_file.write(text_to_write + "\n")
+        able_to_write = True
+        cond_write_file.notify_all()
+        
+
 
 users = []
 
 allCommands = "signup <username> : allows you to login into the chatroom\n msg <message> : sends a message in the global chatroom,\n msgpv <username>  <user> : sends a message to someone,\n exit : allows you to leave the chatroom,\n afk : avoid you to sends message in the chatroom,\n btk : allows you to send message in the chatroom if you were afk,\n users : Notifies which clients are connected to the server,\n rename <username> : allows you to change your name,\n ping <username> : sends a ping to a user,\n channel <username> : demands the specified user to create a private channel with him,\n acceptchannel <username> : accept the channel creation demand,\n declinechannel <username> : refuse the channel creation demand,\n sharefile <username> <namefile> : Share a file to someone but he has to accept,\n acceptfile <username> <namefile> : accept the file that has been shared by a user,\n declinefile <username> <namefile> : refuse the file that has benn shared by a user\n"
+
+lock_write_file = threading.Lock()
+cond_write_file = threading.Condition(lock_write_file)
+able_to_write = True
+
+lock_general = threading.Lock()
+cond_general = threading.Condition(lock_general)
+able_to_use = True
+
 
 with socket.socket() as sock_locale:
     sock_locale.bind(("", int(sys.argv[1])))
