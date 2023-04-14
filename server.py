@@ -515,11 +515,17 @@ def channel(mess, sock_fille):
         else:
             dest_user = getUserByUsername(mess[0])
             if dest_user is not None:
-                user = getUser(sock_fille)
-                channelFromSrv(dest_user, user)
-                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                write_to_log_file(f"{username_or_ip} channel ${dt} 200")
-                sock_fille.sendall("200".encode())
+                user_exists_in_request_channel = dest_user.checkIfUserExistsInRequestChannel(user)
+                if not user_exists_in_request_channel:
+                    user = getUser(sock_fille)
+                    channelFromSrv(dest_user, user)
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username_or_ip} channel ${dt} 200")
+                    sock_fille.sendall("200".encode())
+                else:
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username_or_ip} channel ${dt} 447")
+                    sock_fille.sendall("447".encode())
             else:
                 dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 write_to_log_file(f"{username_or_ip} channel ${dt} 402")
@@ -636,17 +642,28 @@ def sharefile(mess, sock_fille):
         write_to_log_file(f"{username_or_ip} sharefile ${dt} 403")
         sock_fille.sendall("403".encode())
     else:
-        dest_user = getUserByUsername(mess[0])
-        if dest_user is not None:
-            user = getUser(sock_fille)
-            share_file_from_srv(dest_user, user, "50", mess[1], mess[2]) 
+        user = getUser(sock_fille)
+        if user.getUsername() == mess[0]:
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            write_to_log_file(f"{username_or_ip} sharefile ${dt} 200")
-            sock_fille.sendall("200".encode())
-        else:
-            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            write_to_log_file(f"{username_or_ip} sharefile ${dt} 402")
-            sock_fille.sendall("402".encode()) 
+            write_to_log_file(f"{username_or_ip} sharefile ${dt} 448")
+            sock_fille.sendall("448".encode())
+        else: 
+            dest_user = getUserByUsername(mess[0])
+            if dest_user is not None:
+                file_already_in_request_share_file_list = dest_user.checkIfFileExistsInRequestShareFile(user, mess[1])
+                if not file_already_in_request_share_file_list:
+                    share_file_from_srv(dest_user, user, "50", mess[1], mess[2]) 
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username_or_ip} sharefile ${dt} 200")
+                    sock_fille.sendall("200".encode())
+                else:
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username_or_ip} sharefile ${dt} 442")
+                    sock_fille.sendall("442".encode())
+            else:
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} sharefile ${dt} 402")
+                sock_fille.sendall("402".encode()) 
 
 def share_file_from_srv(dest_user, user, file_size, file_name, port):
     user.addToRequestSharefile(dest_user, file_name)
@@ -684,8 +701,8 @@ def acceptfile(mess, sock_fille):
                 sock_fille.sendall("200".encode())
             else:
                 dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                write_to_log_file(f"{username_or_ip} acceptfile ${dt} 200")
-                sock_fille.sendall("444".encode())
+                write_to_log_file(f"{username_or_ip} acceptfile ${dt} 443")
+                sock_fille.sendall("443".encode())
         else:
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             write_to_log_file(f"{username_or_ip} acceptfile ${dt} 402")
@@ -725,8 +742,8 @@ def declinefile(mess, sock_fille):
                 sock_fille.sendall("200".encode())
             else:
                 dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                write_to_log_file(f"{username_or_ip} declinefile ${dt} 444")
-                sock_fille.sendall("444".encode())
+                write_to_log_file(f"{username_or_ip} declinefile ${dt} 443")
+                sock_fille.sendall("443".encode())
         else:
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             write_to_log_file(f"{username_or_ip} declinefile ${dt} 402")
