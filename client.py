@@ -44,7 +44,7 @@ file_queue = {}
 file_reception_requests = {}
 #Methodes
 def listen_server_cmd(sock):
-    global last_command, username, liste_msg, reponses_possibles, commands_from_srv, liste_msg_pv
+    global last_command, username, liste_msg, reponses_possibles, commands_from_srv, liste_msg_pv, sock_server
     with sock:
         while True:
             try:
@@ -95,10 +95,8 @@ def listen_server_cmd(sock):
                             case "declinechannel":
                                 print("Your request channel has been declined")
                             case "sharefile":
-                                prepare_share_file(sock,command)
                                 print("Your request to send a file  has been sent")
                             case "acceptfile":
-                                accept_file(r_formatted)
                                 print("Your file accept has been sent")
                             case "declinefile":
                                 print("Your file denial has been sent")
@@ -138,13 +136,12 @@ def listen_server_cmd(sock):
                                 print(f"{r_formatted}")
                                 print(f"{r_formatted[1]} has accepted to receive your file")
                                 print(f"your file is being sent")
-                                send_file(r_formatted)
+                                # send_file(r_formatted)
+                                accept_file_from_srv_v2(r_formatted)
                             case "declinedfileFromSrv":
                                 print(f"{r_formatted[1]} doesn't want files from you D: ")
             except Exception as e:
                 logging.error(traceback.format_exc())
-
-
 
 def talk_to_server(sock):
     global last_command, username, liste_msg
@@ -154,18 +151,25 @@ def talk_to_server(sock):
         cmd = input("$ ")
         last_command = cmd
         temp = cmd.split(" ")
+        print(f"temp {temp}")
         if temp[0] == "sharefile":
-            cmd += prepare_share_file(temp)
+            cmd += prepare_share_file(sock, temp)
             tmp = cmd
             print(tmp) 
+        if temp[0] == "acceptfile":
+            print("yesyes")
+            accept_file(temp)
         sock.sendall(cmd.encode())
 
-# sharefile <username> <file path> <port>
-def send_file(sock, user, file_name):
+def send_file(r_formatted):
     global file_queue
+    print(r_formatted)
+    user = r_formatted[1]
+    file_name = r_formatted[2]
     file_stats = os.stat(file_name)
     progress = tqdm.tqdm(range(file_stats.st_size), f"Sending {file_name}", unit="B", unit_scale=True, unit_divisor=1024)
-    for u, f in file_queue.items():
+    for u, (f, sock) in file_queue.items():
+        s_target, _ = sock.accept()
         if u == user and f == file_name:
             with open(file_name, "rb") as f:
                 while True:
@@ -176,27 +180,17 @@ def send_file(sock, user, file_name):
                         break
                     # we use sendall to assure transimission in 
                     # busy networks
-                    sock.sendall(bytes_read)
+                    s_target.sendall(bytes_read)
                     # update the progress bar
                     progress.update(len(bytes_read))
-    sock.shutdown(socket.SHUT_RDWR)
+    # sock.shutdown(socket.SHUT_RDWR)
 
-def accept_file_from_srv(sock, user, file_name):
-        
-    while True:
-        try:
-            s_target, _ = sock.accept()
-            send_file(s_target,user,file_name)
-            # threading.Thread(target=traiter_client,
-            # args=(sock_client,)).start()
-        except KeyboardInterrupt:
-            break
-
-    # send_thread = threading.Thread(target=send_file, args=(s_target, user, file_name))
-    # send_thread.start()
-    # send_thread.join()
-    # sys.exit(0)
-    
+def accept_file_from_srv_v2(r_formatted):
+    # A thread for each file we send
+    threading.Thread(target=send_file, args=(r_formatted,)).start()
+    for t in threading.enumerate():
+        if t != threading.main_thread(): 
+            t.join
 
 def prepare_share_file(sock, m_formatted):
     global file_queue
@@ -204,23 +198,15 @@ def prepare_share_file(sock, m_formatted):
     file_stats = os.stat(file_name)
     
     #A Socket for each file to send
-    # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # s.bind(("", int(m_formatted[3])))
-    # s.listen(4)
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((sock.getsockname()[0], int(m_formatted[3])))
+    s.listen(4)
     # Dict of all files to send
     if m_formatted[1] in file_queue.keys():
-        file_queue[m_formatted[1]].extend([file_name])
+        file_queue[m_formatted[1]].extend([file_name, s])
     else:
-        file_queue[m_formatted[1]] = [file_name]
-
-    # A thread for each file we send
-    threading.Thread(target=accept_file_from_srv, args=(sock, m_formatted[1], file_name)).start()
-    for t in threading.enumerate():
-        if t != threading.main_thread(): 
-            t.join
-    # To attach it to the command
+        file_queue[m_formatted[1]] = [file_name, s]
     return f" {file_stats.st_size}"
-
 
 def share_file_from_srv(m_formatted):
     global file_reception_requests
@@ -233,46 +219,55 @@ def share_file_from_srv(m_formatted):
         file_reception_requests[username].extend([(file_name, f_size, target_ip, target_port)])
     else:
         file_reception_requests[username] = [(file_name, f_size, target_ip, target_port)]
-
+    print("ajout de demande success")
 
 def accept_file(response_formatted):
+    print(response_formatted)
     user = response_formatted[1]
     file = response_formatted[2]
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     for u, f in file_reception_requests.items():
-        if u == user and file == f[0]:
-            size = f[1]
-            adr_ip = f[2]
-            port = f[3]
+        print(f"user : {u} f : {f}")
+        if u == user and file == f[0][0]:
+            size = f[0][1]
+            adr_ip = f[0][2]
+            port = f[0][3]
+            print("point 2")
             s.connect((str(adr_ip), int(port)))
-            reception_thread = threading.Thread(target=wait_for_file_arrival, args=(s, size, user, file))
-            reception_thread.start()
-            reception_thread.join()
+            print(f"taille_fichier : {size}")
+            threading.Thread(target=wait_for_file_arrival, args=(s, size, user, file)).start()
+            for t in threading.enumerate():
+                if t != threading.main_thread(): 
+                    t.join
+            print("thread lancé")
 
 def wait_for_file_arrival(sock, size, user, file):
-    progress = tqdm.tqdm(range(size), f"Receiving {user}", unit="B", unit_scale=True, unit_divisor=1024)
+    progress = tqdm.tqdm(range(int(size)), f"Receiving {user}", unit="B", unit_scale=True, unit_divisor=1024)
     with sock:
-        with open(file, "wb") as f:
+        with open("test.jpg", "wb") as f:
+        # with open(file, "wb") as f:
             while True:
-                # read 1024 bytes from the socket (receive)
-                bytes_read = sock.recv(4096)
-                if not bytes_read:    
-                    # nothing is received
-                    # file transmitting is done
-                    break
-                # write to the file the bytes we just received
-                f.write(bytes_read)
-                # update the progress bar
+                try:
+                    bytes_read = sock.recv(4096)
+                    print("cool")
+                    if not bytes_read:    
+                        # nothing is received
+                        # file transmitting is done
+                        break
+                    # write to the file the bytes we just received
+                    f.write(bytes_read)
+                    # update the progress bar
+                except Exception as e:
+                    logging.error(traceback.format_exc())
+        sock.shutdown(socket.SHUT_RDWR)
         progress.update(len(bytes_read))
     sys.exit(0)
 
-# Create a socket object
-# with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((adresse, int(port)))
-# Start threads for receiving and sending data
-recv_thread = threading.Thread(target=listen_server_cmd, args=(s,))
-send_thread = threading.Thread(target=talk_to_server, args=(s,))
+sock_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock_server.connect((adresse, int(port)))
+
+recv_thread = threading.Thread(target=listen_server_cmd, args=(sock_server,))
+send_thread = threading.Thread(target=talk_to_server, args=(sock_server,))
 recv_thread.start()
 send_thread.start()
 
