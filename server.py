@@ -514,18 +514,23 @@ def channel(mess, sock_fille):
             sock_fille.sendall("407".encode())
         else:
             dest_user = getUserByUsername(mess[0])
+            user = getUser(sock_fille)
             if dest_user is not None:
-                user_exists_in_request_channel = dest_user.checkIfUserExistsInRequestChannel(user)
-                if not user_exists_in_request_channel:
-                    user = getUser(sock_fille)
+                user_exists_in_dest_user_request_channel = dest_user.checkIfUserExistsInRequestChannel(user)
+                dest_user_exists_in_user_request_channel = user.checkIfUserExistsInRequestChannel(dest_user)
+                if user_exists_in_dest_user_request_channel:
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username_or_ip} channel ${dt} 441")
+                    sock_fille.sendall("441".encode())
+                elif dest_user_exists_in_user_request_channel:
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username_or_ip} channel ${dt} 447")
+                    sock_fille.sendall("447".encode())
+                else:
                     channelFromSrv(dest_user, user)
                     dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                     write_to_log_file(f"{username_or_ip} channel ${dt} 200")
                     sock_fille.sendall("200".encode())
-                else:
-                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                    write_to_log_file(f"{username_or_ip} channel ${dt} 447")
-                    sock_fille.sendall("447".encode())
             else:
                 dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 write_to_log_file(f"{username_or_ip} channel ${dt} 402")
@@ -533,7 +538,6 @@ def channel(mess, sock_fille):
 
 def channelFromSrv(dest_user, user):
     dest_user.addUserToRequestChannel(user)
-    user.addUserToRequestChannel(dest_user)
     dest_user.getSocket().sendall(("channelFromSrv|"+dest_user.getUsername()+"|"+user.getUsername()).encode())
 
 def acceptchannel(mess, sock_fille):
@@ -558,12 +562,10 @@ def acceptchannel(mess, sock_fille):
         user = getUser(sock_fille)
         if sender is not None:
             userRequestChannel = user.getRequestChannel()
-            senderRequestChannel = sender.getRequestChannel()
-            if sender in userRequestChannel and user in senderRequestChannel:
+            if sender in userRequestChannel:
                 user.addUserToChannel(sender)
                 user.removeUserFromRequestChannel(sender)
                 sender.addUserToChannel(user)
-                sender.removeUserFromRequestChannel(user)
                 acceptedchannelFromSrv(sender, user)
                 dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 write_to_log_file(f"{username_or_ip} acceptchannel ${dt} 200")
@@ -603,8 +605,7 @@ def declinechannel(mess, sock_fille):
         user = getUser(sock_fille)
         if sender is not None:
             userRequestChannel = user.getRequestChannel()
-            senderRequestChannel = sender.getRequestChannel()
-            if sender in userRequestChannel and user in senderRequestChannel:
+            if sender in userRequestChannel:
                 declinedchannelFromSrv(sender, user)
                 dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 write_to_log_file(f"{username_or_ip} declinechannel ${dt} 200")
@@ -621,7 +622,6 @@ def declinechannel(mess, sock_fille):
 
 def declinedchannelFromSrv(sender, user):
     user.removeUserFromRequestChannel(sender)
-    sender.removeUserFromRequestChannel(user)
     sender.getSocket().sendall(("declinedchannelFromSrv|"+user.getUsername()).encode())
 
 def sharefile(mess, sock_fille):
