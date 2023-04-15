@@ -652,7 +652,7 @@ def sharefile(mess, sock_fille):
             if dest_user is not None:
                 file_already_in_request_share_file_list = dest_user.checkIfFileExistsInRequestShareFile(user, mess[1])
                 if not file_already_in_request_share_file_list:
-                    share_file_from_srv(dest_user, user, "50", mess[1], mess[2]) 
+                    share_file_from_srv(dest_user, user, mess[3], mess[1], mess[2]) 
                     dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                     write_to_log_file(f"{username_or_ip} sharefile ${dt} 200")
                     sock_fille.sendall("200".encode())
@@ -670,7 +670,7 @@ def share_file_from_srv(dest_user, user, file_size, file_name, port):
     dest_user.addToRequestSharefile(user, file_name)
     adr_src = user.getSocket()
     sockt = adr_src.getsockname()
-    dest_user.getSocket().sendall(("sharefileFromSrv|"+str(user.getUsername())+"|"+str(file_name)+"|"+str(file_size)+"|"+str(sockt[0])+"|"+str(port)+str(sockt[1])).encode())
+    dest_user.getSocket().sendall(("sharefileFromSrv|"+str(user.getUsername())+"|"+str(file_name)+"|"+str(file_size)+"|"+str(sockt[0])+"|"+str(port)+"|"+str(sockt[1])).encode())
 
 def acceptfile(mess, sock_fille):
     connected = getConnected(sock_fille)
@@ -711,7 +711,7 @@ def acceptfile(mess, sock_fille):
 def acceptedfileFromSrv(sender, user, file):
     user.removeFromRequestSharefile(sender, file)
     user.addToSharefile(sender, file)
-    sender.getSocket().sendall(("acceptedfileFromSrv|"+user.getUsername()+str(file)).encode())
+    sender.getSocket().sendall(("acceptedfileFromSrv|"+user.getUsername()+"|"+str(file)).encode())
 
 def declinefile(mess, sock_fille):    
     connected = getConnected(sock_fille)
