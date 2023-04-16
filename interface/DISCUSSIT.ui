@@ -26,10 +26,10 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
-       <widget class="QListView" name="chats"/>
+       <widget class="QListView" name="listView"/>
       </item>
       <item>
-       <widget class="QListView" name="users_lists">
+       <widget class="QTextEdit" name="textEdit">
         <property name="maximumSize">
          <size>
           <width>200</width>
@@ -43,10 +43,10 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QLineEdit" name="message"/>
+       <widget class="QLineEdit" name="lineEdit"/>
       </item>
       <item>
-       <widget class="QPushButton" name="send_message">
+       <widget class="QPushButton" name="pushButton">
         <property name="text">
          <string>Send</string>
         </property>
