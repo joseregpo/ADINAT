@@ -7,6 +7,7 @@ from user import User
 import signal
 import traceback
 import logging
+import configparser
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -843,7 +844,7 @@ def write_to_log_file(text_to_write):
     with lock_write_file:
         cond_write_file.wait_for(lambda: able_to_write)
         able_to_write = False
-        with open("server.log", "a") as server_file:
+        with open(log_file_name, "a") as server_file:
             server_file.write(text_to_write + "\n")
         able_to_write = True
         cond_write_file.notify_all()
@@ -862,9 +863,15 @@ lock_general = threading.Lock()
 cond_general = threading.Condition(lock_general)
 able_to_use = True
 
+config = configparser.ConfigParser()
+config.read('adinat.conf')
+
+port = config.get("server", "port")
+log_file_name = config.get("log", "filename")
+
 
 with socket.socket() as sock_locale:
-    sock_locale.bind(("", int(sys.argv[1])))
+    sock_locale.bind(("", int(port)))
     sock_locale.listen(4)
     
     while True:
