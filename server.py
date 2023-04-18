@@ -15,7 +15,6 @@ def traiter_client(sock_fille):
     global able_to_use
     while True:
         try:
-            print(sock_fille)
             mess = sock_fille.recv(1024)
             mess = mess.decode()
             mess = mess.split(" ", 1)
@@ -198,7 +197,7 @@ def traiter_client(sock_fille):
                     username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
                     dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                     write_to_log_file(f"{username} unknown command ${dt} 400")
-                    sock_fille.sendall(("400|"+allCommands).encode())
+                    #sock_fille.sendall(("400|"+allCommands).encode())
         except Exception as e:
             logging.error(traceback.format_exc())
 
@@ -211,9 +210,13 @@ def help(mess, sock_fille):
         write_to_log_file(f"{username} help ${dt} 430")
         sock_fille.sendall("430".encode())
     else:
+        helpFromSrv(sock_fille)
         dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         write_to_log_file(f"{username} help ${dt} 200")
-        sock_fille.sendall(("200|"+allCommands).encode())
+        sock_fille.sendall("200".encode())
+
+def helpFromSrv(sock_fille):
+    sock_fille.sendall(("helpFromSrv|"+allCommands).encode())
 
 
 
