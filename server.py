@@ -200,6 +200,7 @@ def traiter_client(sock_fille):
                     sock_fille.sendall(("400|"+allCommands).encode())
         except Exception as e:
             logging.error(traceback.format_exc())
+            break
 
 def help(mess, sock_fille):
     connected = getConnected(sock_fille)

@@ -6,7 +6,10 @@ import traceback
 import logging
 import tqdm
 import signal
-
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QApplication, QWidget
+import sys 
+from IHM import Ui_DISCUSSIT
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -44,11 +47,15 @@ reponses_possibles = {
 #Partie stockage utilisateur
 username = ""
 last_command = ""
-connected_users = []
+connected_users = ["General"]
 file_queue = {}
 file_reception_requests = {}
-chats = {}
-#Methodes
+chatrooms = {"General" : []}
+state = ""
+
+####################  Methodes du serveur Client ASCII
+
+
 def listen_server_cmd(sock):
     global last_command, username, reponses_possibles, commands_from_srv
     with sock:
@@ -190,45 +197,30 @@ def listen_server_cmd(sock):
             except Exception as e:
                 logging.error(traceback.format_exc())
 
-def talk_to_server(sock):
-    global last_command, username
-    while True:
-        if last_command == "exit":
-            break
-        cmd = input("$ ")
-        last_command = cmd
-        temp = cmd.split(" ")
-        if temp[0] == "sharefile":
-            if check_file_path(temp[2]) and check_port_availability(temp[3]):
-                cmd = prepare_share_file(sock, temp)
-                sock.sendall(cmd.encode())
-            elif not check_file_path(temp[2]):
-                print(reponses_possibles["405"])
-            elif not check_port_availability(temp[3]):
-                print(reponses_possibles["446"])
-        elif temp[0] == "acceptfile":
-            accept_file(temp)
-            sock.sendall(cmd.encode())
-        else:
-            sock.sendall(cmd.encode())
-
 def update_users_list(users_string):
-    print(users_string)
+    global connected_users
+    users_string = users_string.replace("[","")
+    users_string = users_string.replace("]","")
+    users_string = users_string.replace("'","")
+    users_string = users_string.replace(" ","")
+    connected_users = users_string.split(",")
+    print(connected_users)
+    # print(users_string[1:len(users_string)-1])
 
 def renameFromSrv(r_formatted):
-    global file_queue, file_reception_requests, chats
+    global file_queue, file_reception_requests, chatrooms
     old_username = r_formatted[1]
     new_username = r_formatted[2]
     rename_in_dico(old_username,new_username,file_queue)
     rename_in_dico(old_username,new_username,file_reception_requests)
-    rename_in_dico(old_username,new_username,chats)
+    rename_in_dico(old_username,new_username,chatrooms)
 
 def add_to_chat(nom_chat, msg):
-    global chats
-    if nom_chat in chats.keys():
-        chats[nom_chat].extend([msg])
+    global chatrooms
+    if nom_chat in chatrooms.keys():
+        chatrooms[nom_chat].extend([msg])
     else :
-        chats[nom_chat] = [msg]
+        chatrooms[nom_chat] = [msg]
 
 def rename_in_dico(old_key, new_key, dico):
     for k,v in dico.items():
@@ -237,12 +229,14 @@ def rename_in_dico(old_key, new_key, dico):
                 dico[new_key] = dico.pop(old_key)
             except Exception as e:
                 logging.error(traceback.format_exc())
-def check_port_availability(port):
+
+def check_port_availability(sock, port):
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('localhost', port))
+            s.bind((sock.getsockname()[0], int(port)))
         return True
-    except:
+    except Exception as e:
+        logging.error(traceback.format_exc())
         return False
 
 def check_file_path(path):
@@ -276,7 +270,7 @@ def prepare_share_file(sock, m_formatted):
     global file_queue
     f_path = m_formatted[2]
     file_stats = os.stat(f_path)
-    f_name = os.basename(f_path)
+    f_name = os.path.basename(f_path)
 
     #A Socket for each file to send
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -319,7 +313,7 @@ def accept_file(response_formatted):
 def wait_for_file_arrival(sock, size, user, file):
     progress = tqdm.tqdm(range(int(size)), f"Receiving {user}", unit="B", unit_scale=True, unit_divisor=1024)
     with sock:
-        with open("test.jpg", "wb") as f:
+        with open("testfile.jpg", "wb") as f:
         # with open(file, "wb") as f:
             while True:
                 try:
@@ -337,16 +331,315 @@ def wait_for_file_arrival(sock, size, user, file):
         progress.update(len(bytes_read))
     sys.exit(0)
 
-sock_locale = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock_locale.connect((adresse, int(port)))
+def talk_to_server(sock):
+    global last_command, username
+    while True:
+        if last_command == "exit":
+            break
+        cmd = input("$ ")
+        last_command = cmd
+        temp = cmd.split(" ")
+        if temp[0] == "sharefile":
+            if check_file_path(temp[2]) and check_port_availability(sock, temp[3]):
+                cmd = prepare_share_file(sock, temp)
+                sock.sendall(cmd.encode())
+            elif not check_file_path(temp[2]):
+                print(reponses_possibles["405"])
+            elif not check_port_availability(sock, temp[3]):
+                print(reponses_possibles["446"])
+        elif temp[0] == "acceptfile":
+            accept_file(temp)
+            sock.sendall(cmd.encode())
+        else:
+            sock.sendall(cmd.encode())
 
-recv_thread = threading.Thread(target=listen_server_cmd, args=(sock_locale,))
-send_thread = threading.Thread(target=talk_to_server, args=(sock_locale,))
-recv_thread.start()
-send_thread.start()
 
 
-# Wait for threads to finish
-recv_thread.join()
-send_thread.join()
-sys.exit(0)
+#################################################################
+
+
+
+
+############   Methodes du IHM
+class MainWindow(QWidget, Ui_DISCUSSIT):
+    def __init__(self, parent=None):
+        QWidget.__init__(self, parent)
+        self.setupUi(self)
+        self.sock_locale = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock_locale.connect((adresse, int(port)))
+        recv_thread = threading.Thread(target=self.listen_server_cmd, args=(self.sock_locale,))
+        recv_thread.start()
+        for t in threading.enumerate():
+            if t != threading.main_thread(): 
+                t.join
+        self.send_message.clicked.connect(self.on_clic)
+        self.users_lists.itemClicked.connect(self.change_chatroom)
+        self.chats.addItems(chatrooms["General"])
+        self.users_lists.addItems(connected_users)
+
+    def change_chatroom(self, item):
+        for k, v in chatrooms.items():
+            if k == item.text():
+                self.chats.clear()
+                self.chats.addItems(v)
+
+    def update_chatroom_by_name(self, chatroom):
+        for k, v in chatrooms.items():
+            if k == chatroom:
+                self.chats.clear()
+                self.chats.addItems(v)
+
+    def on_clic(self):
+        self.talk_to_server_from_IHM(self.message.text())
+        self.message.setText("")
+
+    def keyPressEvent(self, e):
+        if e.key() == 16777220:
+            self.on_clic()
+
+    def talk_to_server_from_IHM(self, cmd):
+        global last_command, username
+        if last_command == "exit":
+            sys.exit(0)
+        last_command = cmd
+        temp = cmd.split(" ")
+        print(temp)
+        if temp[0] == "sharefile":
+            if check_file_path(temp[2]) and check_port_availability(self.sock_locale, temp[3]):
+                cmd = prepare_share_file(self.sock_locale, temp)
+                self.sock_locale.sendall(cmd.encode())
+            elif not check_file_path(temp[2]):
+                print("405 : ", reponses_possibles["405"])
+                last_command = ""
+            elif not check_port_availability(self.sock_locale,temp[3]):
+                print("446 : ", reponses_possibles["446"])
+                last_command = ""
+        elif temp[0] == "acceptfile":
+            accept_file(temp)
+            self.sock_locale.sendall(cmd.encode())
+        else:
+            self.sock_locale.sendall(cmd.encode())
+        # self.sock_locale.sendall("users".encode())
+    
+    def updateUsersList(self, users_string):
+        global connected_users
+        users_string = users_string.replace("[","")
+        users_string = users_string.replace("]","")
+        users_string = users_string.replace("'","")
+        users_string = users_string.replace(" ","")
+        connected_users = ["General"] + users_string.split(",")
+        self.users_lists.clear()
+        self.users_lists.addItems(list(connected_users))
+
+    def request_users(self, sec):
+        def func_wrapper():
+            self.request_users(sec)
+            if state != "afk":
+                self.sock_locale.sendall("users".encode())
+        t = threading.Timer(sec, func_wrapper)
+        t.start()
+        return t
+
+
+    def add_to_chat(self, nom_chat, msg):
+        if nom_chat in chatrooms.keys():
+            chatrooms[nom_chat].append(msg)
+        else :
+            chatrooms[nom_chat] = [msg]
+    
+    def traiter_state(self, user, state):
+        for u in connected_users:
+            if u == user:
+                if state == "btk":
+                    u = u.split(" ")
+                    u = u[0]
+                elif state == "afk":
+                    u += " (afk)"
+
+    def listen_server_cmd(self, sock):
+        global last_command, username, reponses_possibles, commands_from_srv, state
+        cpteur_reponses = 0
+        with sock:
+            while True:
+                try:
+                    cpteur_reponses += 1
+                    reponse = sock.recv(1024)
+                    reponse = reponse.decode()
+                    # print(f"reponse nro : {cpteur_reponses} avec {reponse}")
+                    r_formatted = reponse.split("|")
+                    #Traitement des messages constants du serveur
+                    if r_formatted[0] != "200" and r_formatted[0] in reponses_possibles.keys():
+                        print(r_formatted[0] + " : " + reponses_possibles[r_formatted[0]])
+                    else:
+                        if r_formatted[0] not in commands_from_srv:
+                            command = last_command.split(' ')
+                            match command[0]:
+                                case "help":
+                                    self.add_to_chat("General", r_formatted[1])
+                                case "signup":
+                                    username = last_command.split(" ", 1)
+                                    username = username[1]
+                                    self.add_to_chat("General", "You are now connected jhsbflhsfdlk")
+                                    self.update_chatroom_by_name("General")
+                                    self.request_users(2)
+                                    state = "btk"
+
+                                case "msg":
+                                    self.add_to_chat("General", f"{username} : {command[1]}")
+                                    self.update_chatroom_by_name("General")
+
+                                case "msgpv":
+                                    temp = command [2:]
+                                    msg = ""
+                                    for mot in temp:
+                                        msg += mot + " "
+                                    self.add_to_chat(command[1], f"{username} : {msg}")
+                                    self.update_chatroom_by_name(command[1])
+
+                                case "exit":
+                                    self.add_to_chat("General", "You are now offline")
+                                    self.update_chatroom_by_name("General")
+                                    break
+
+                                case "afk":
+                                    self.add_to_chat("General", "You are now AFK")
+                                    self.update_chatroom_by_name("General")
+                                    state = "afk"
+
+                                case "btk":
+                                    self.add_to_chat("General", "You are now BTK")
+                                    self.update_chatroom_by_name("General")
+                                    state = "btk"
+
+                                case "rename":
+                                    username = last_command.split(" ", 1)
+                                    username = username[1]
+                                    self.add_to_chat("General", "You have been renamed")
+                                    self.update_chatroom_by_name("General")
+
+                                case "ping":
+                                    self.add_to_chat("General", "You pinged someone")
+                                    self.update_chatroom_by_name("General")
+
+                                case "channel":
+                                    self.add_to_chat("General", "Your request for a private channel has been sent")
+                                    self.update_chatroom_by_name("General")
+
+                                case "acceptchannel":
+                                    self.add_to_chat("General", "Your request channel has been accepted")
+                                    self.update_chatroom_by_name("General")
+
+                                case "declinechannel":
+                                    self.add_to_chat("General", "Your request channel has been declined")
+                                    self.update_chatroom_by_name("General")
+
+                                case "sharefile":
+                                    self.add_to_chat("General", "Your request to send a file  has been sent")
+                                    self.update_chatroom_by_name("General")
+
+                                case "acceptfile":
+                                    self.add_to_chat("General", "Your file accept has been sent")
+                                    self.update_chatroom_by_name("General")
+
+                                case "declinefile":
+                                    self.add_to_chat("General", "Your file denial has been sent")
+                                    self.update_chatroom_by_name("General")
+
+                                case "users":
+                                    pass
+
+                                case "":
+                                    pass
+
+                            last_command = ""
+                        else :
+                            match r_formatted[0]:
+                                case "signupFromSrv":
+                                    self.add_to_chat("General", f"{r_formatted[1]} has arrived to the server !")
+                                    if r_formatted[1] not in connected_users:
+                                        connected_users.append(r_formatted[1])
+                                    self.update_chatroom_by_name("General")
+
+                                case "msgFromSrv":
+                                    self.add_to_chat("General", f"{r_formatted[1]} : {r_formatted[2]}")
+                                    self.update_chatroom_by_name("General")
+
+                                case "msgpvFromSrv":
+                                    self.add_to_chat(r_formatted[1], f"{r_formatted[1]} : {r_formatted[2]}")
+                                    self.update_chatroom_by_name(r_formatted[1])
+
+                                case "exitedFromSrv":
+                                    if r_formatted[1] not in connected_users:
+                                        connected_users.remove(r_formatted[1])
+                                    self.add_to_chat("General", f"{r_formatted[1]} has exited the server")
+                                    self.update_chatroom_by_name("General")
+
+                                case "afkFromSrv":
+                                    self.add_to_chat("General", f"{r_formatted[1]} is now afk")
+                                    self.update_chatroom_by_name("General")
+
+                                case "btkFromSrv":
+                                    self.add_to_chat("General", f"{r_formatted[1]} is back to the party !")
+                                    self.update_chatroom_by_name("General")
+
+                                case "usersFromSrv":
+                                    update_users_list(r_formatted[1])
+                                    self.updateUsersList(r_formatted[1])
+
+                                case "renameFromSrv":
+                                    self.add_to_chat("General", f"{r_formatted[1]} changed his name to {r_formatted[2]}")
+                                    self.updateUsersList(r_formatted[1])
+                                    self.update_chatroom_by_name("General")
+
+                                case "pingFromSrv":
+                                    self.add_to_chat("General", f"{r_formatted[1]} is looking for you")
+                                    self.update_chatroom_by_name("General")
+
+                                case "channelFromSrv":
+                                    self.add_to_chat("General", f"{r_formatted[2]} wants to be private with you")
+                                    self.update_chatroom_by_name("General")
+
+                                case "acceptedchannelFromSrv":
+                                    self.add_to_chat("General", f"{r_formatted[1]} has accepted your channel !")
+                                    self.update_chatroom_by_name("General")
+
+                                case "declinedchannelFromSrv":
+                                    self.add_to_chat("General", f"{r_formatted[1]} doesn't want to be alone with you :(")
+                                    self.update_chatroom_by_name("General")
+
+                                case "sharefileFromSrv":
+                                    share_file_from_srv(r_formatted)
+                                    self.add_to_chat("General", f"{r_formatted[1]} wants to send you a file")
+                                    self.update_chatroom_by_name("General")
+
+                                case "acceptedfileFromSrv":
+                                    self.add_to_chat("General", f"{r_formatted[1]} has accepted to receive your file")
+                                    accept_file_from_srv_v2(r_formatted)
+                                    self.update_chatroom_by_name("General")
+
+                                case "declinedfileFromSrv":
+                                    self.add_to_chat("General", f"{r_formatted[1]} doesn't want files from you D: ")
+                                    self.update_chatroom_by_name("General")
+
+                except Exception as e:
+                    logging.error(traceback.format_exc())
+
+
+if __name__ == '__main__':
+    import sys
+    #Socket de connexion au serveur
+    # sock_locale = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # sock_locale.connect((adresse, int(port)))
+    # recv_thread = threading.Thread(target=listen_server_cmd, args=(sock_locale,))
+    # send_thread = threading.Thread(target=talk_to_server, args=(sock_locale,))
+    # On lance les threads
+    # recv_thread.start()
+    # send_thread.start()
+    # for t in threading.enumerate():
+    #     if t != threading.main_thread(): 
+    #         t.join
+
+    app = QApplication(sys.argv)
+    win = MainWindow()
+    win.show()
+    sys.exit(app.exec_())
