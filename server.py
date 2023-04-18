@@ -7,6 +7,7 @@ from user import User
 import signal
 import traceback
 import logging
+import configparser
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -14,7 +15,6 @@ def traiter_client(sock_fille):
     global able_to_use
     while True:
         try:
-            print(sock_fille)
             mess = sock_fille.recv(1024)
             mess = mess.decode()
             mess = mess.split(" ", 1)
@@ -197,7 +197,7 @@ def traiter_client(sock_fille):
                     username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
                     dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                     write_to_log_file(f"{username} unknown command ${dt} 400")
-                    sock_fille.sendall(("400|"+allCommands).encode())
+                    #sock_fille.sendall(("400|"+allCommands).encode())
         except Exception as e:
             logging.error(traceback.format_exc())
             break
@@ -206,18 +206,18 @@ def help(mess, sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
     username = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
-    if not connected:
+    if state == "afk":
         dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        write_to_log_file(f"{username} help ${dt} 418")
-        sock_fille.sendall("418".encode())
-    elif state == "afk":
-        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        write_to_log_file(f"{username} help ${dt} 415")
-        sock_fille.sendall("415".encode())
+        write_to_log_file(f"{username} help ${dt} 430")
+        sock_fille.sendall("430".encode())
     else:
+        helpFromSrv(sock_fille)
         dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         write_to_log_file(f"{username} help ${dt} 200")
-        sock_fille.sendall(("200|"+allCommands).encode())
+        sock_fille.sendall("200".encode())
+
+def helpFromSrv(sock_fille):
+    sock_fille.sendall(("helpFromSrv|"+allCommands).encode())
 
 
 
@@ -314,18 +314,23 @@ def msgpv(mess, sock_fille):
         dest_username = mess[0]
         dest_user = getUserByUsername(dest_username)
         if dest_user is not None:
-            channelExists = verifyChannelExists(sock_fille, dest_user)
-            if channelExists:
-                my_username = getUsername(sock_fille)
-                message = mess[1]
-                msgpvFromSrv(dest_user, message, my_username)
-                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                write_to_log_file(f"{username_or_ip} msgpv ${dt} 200")
-                sock_fille.sendall("200".encode())            
+            if dest_username != username_or_ip:
+                channelExists = verifyChannelExists(sock_fille, dest_user)
+                if channelExists:
+                    my_username = getUsername(sock_fille)
+                    message = mess[1]
+                    msgpvFromSrv(dest_user, message, my_username)
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username_or_ip} msgpv ${dt} 200")
+                    sock_fille.sendall("200".encode())            
+                else:
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username_or_ip} msgpv ${dt} 421")
+                    sock_fille.sendall("421".encode())
             else:
                 dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                write_to_log_file(f"{username_or_ip} msgpv ${dt} 440")
-                sock_fille.sendall("440".encode())
+                write_to_log_file(f"{username_or_ip} msgpv ${dt} 407")
+                sock_fille.sendall("407".encode())
         else:
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             write_to_log_file(f"{username_or_ip} msgpv ${dt} 402")
@@ -438,19 +443,24 @@ def rename(mess, sock_fille):
         sock_fille.sendall("403".encode())
     else:
         new_username = mess[0]
-        usernameIsAvailable = verifyUsernameIsNotAlreadyTaken(new_username)
-        if not usernameIsAvailable:
-            user = getUser(sock_fille)
-            old_username = user.getUsername()
-            user.setUsername(new_username)
-            renameFromSrv(old_username, new_username, sock_fille)
-            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            write_to_log_file(f"{username_or_ip} rename ${dt} 200")
-            sock_fille.sendall("200".encode())
+        if new_username.isalpha():
+            usernameIsAvailable = verifyUsernameIsNotAlreadyTaken(new_username)
+            if not usernameIsAvailable:
+                user = getUser(sock_fille)
+                old_username = user.getUsername()
+                user.setUsername(new_username)
+                renameFromSrv(old_username, new_username, sock_fille)
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} rename ${dt} 200")
+                sock_fille.sendall("200".encode())
+            else:
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} rename ${dt} 425")
+                sock_fille.sendall("425".encode())
         else:
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            write_to_log_file(f"{username_or_ip} rename ${dt} 425")
-            sock_fille.sendall("425".encode())
+            write_to_log_file(f"{username_or_ip} rename ${dt} 426")
+            sock_fille.sendall("426".encode())
 
 def renameFromSrv(old_username, new_username, sock_fille):
     for i in range (len(users)):
@@ -478,10 +488,15 @@ def ping(mess, sock_fille):
         username = getUsername(sock_fille)
         dest_user = getUserByUsername(mess[0])
         if dest_user is not None:
-            pingFromSrv(dest_user, username)
-            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            write_to_log_file(f"{username_or_ip} ping ${dt} 200")
-            sock_fille.sendall("200".encode())
+            if dest_user.getUsername() != username:
+                pingFromSrv(dest_user, username)
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} ping ${dt} 200")
+                sock_fille.sendall("200".encode())
+            else:
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} ping ${dt} 402")
+                sock_fille.sendall("402".encode())
         else:
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             write_to_log_file(f"{username_or_ip} ping ${dt} 402")
@@ -519,7 +534,12 @@ def channel(mess, sock_fille):
             if dest_user is not None:
                 user_exists_in_dest_user_request_channel = dest_user.checkIfUserExistsInRequestChannel(user)
                 dest_user_exists_in_user_request_channel = user.checkIfUserExistsInRequestChannel(dest_user)
-                if user_exists_in_dest_user_request_channel:
+                dest_user_exists_in_user_channel = user.checkIfUserExistsInChannel(dest_user)
+                if dest_user_exists_in_user_channel:
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username_or_ip} channel ${dt} 404")
+                    sock_fille.sendall("404".encode())
+                elif user_exists_in_dest_user_request_channel:
                     dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                     write_to_log_file(f"{username_or_ip} channel ${dt} 441")
                     sock_fille.sendall("441".encode())
@@ -646,8 +666,8 @@ def sharefile(mess, sock_fille):
         user = getUser(sock_fille)
         if user.getUsername() == mess[0]:
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            write_to_log_file(f"{username_or_ip} sharefile ${dt} 448")
-            sock_fille.sendall("448".encode())
+            write_to_log_file(f"{username_or_ip} sharefile ${dt} 407")
+            sock_fille.sendall("407".encode())
         else: 
             dest_user = getUserByUsername(mess[0])
             if dest_user is not None:
@@ -844,7 +864,7 @@ def write_to_log_file(text_to_write):
     with lock_write_file:
         cond_write_file.wait_for(lambda: able_to_write)
         able_to_write = False
-        with open("server.log", "a") as server_file:
+        with open(log_file_name, "a") as server_file:
             server_file.write(text_to_write + "\n")
         able_to_write = True
         cond_write_file.notify_all()
@@ -853,7 +873,7 @@ def write_to_log_file(text_to_write):
 
 users = []
 
-allCommands = "signup <username> : allows you to login into the chatroom\n msg <message> : sends a message in the global chatroom,\n msgpv <username>  <user> : sends a message to someone,\n exit : allows you to leave the chatroom,\n afk : avoid you to sends message in the chatroom,\n btk : allows you to send message in the chatroom if you were afk,\n users : Notifies which clients are connected to the server,\n rename <username> : allows you to change your name,\n ping <username> : sends a ping to a user,\n channel <username> : demands the specified user to create a private channel with him,\n acceptchannel <username> : accept the channel creation demand,\n declinechannel <username> : refuse the channel creation demand,\n sharefile <username> <namefile> : Share a file to someone but he has to accept,\n acceptfile <username> <namefile> : accept the file that has been shared by a user,\n declinefile <username> <namefile> : refuse the file that has benn shared by a user\n"
+allCommands = "signup <username> : allows you to login into the chatroom\n msg <message> : sends a message in the global chatroom,\n msgpv <username>  <user> : sends a message to someone,\n exit : allows you to leave the chatroom,\n afk : avoid you to sends message in the chatroom,\n btk : allows you to send message in the chatroom if you were afk,\n users : Notifies which clients are connected to the server,\n rename <username> : allows you to change your name,\n ping <username> : sends a ping to a user,\n channel <username> : demands the specified user to create a private channel with him,\n acceptchannel <username> : accept the channel creation demand,\n declinechannel <username> : refuse the channel creation demand,\n sharefile <username> <namefile> : Share a file to someone but he has to accept,\n acceptfile <username> <namefile> : accept the file that has been shared by a user,\n declinefile <username> <namefile> : refuse the file that has been shared by a user\n"
 
 lock_write_file = threading.Lock()
 cond_write_file = threading.Condition(lock_write_file)
@@ -863,9 +883,15 @@ lock_general = threading.Lock()
 cond_general = threading.Condition(lock_general)
 able_to_use = True
 
+config = configparser.ConfigParser()
+config.read('adinat.conf')
+
+port = config.get("server", "port")
+log_file_name = config.get("log", "filename")
+
 
 with socket.socket() as sock_locale:
-    sock_locale.bind(("", int(sys.argv[1])))
+    sock_locale.bind(("", int(port)))
     sock_locale.listen(4)
     
     while True:

@@ -68,12 +68,11 @@ def listen_server_cmd(sock):
                 if r_formatted[0] != "200" and r_formatted[0] in reponses_possibles.keys():
                     print(r_formatted[0] + " : " + reponses_possibles[r_formatted[0]])
                 else:
-                    print(r_formatted)
                     if r_formatted[0] not in commands_from_srv:
                         command = last_command.split(' ')
                         match command[0]:
                             case "help":
-                                print(r_formatted[1])
+                                pass
                             case "signup":
                                 username = last_command.split(" ", 1)
                                 username = username[1]
@@ -127,6 +126,8 @@ def listen_server_cmd(sock):
                                 print(f"Sadly, we don't know yet how to manage this response from the server")
                     else :
                         match r_formatted[0]:
+                            case "helpFromSrv":
+                                print(r_formatted[1])
                             case "signupFromSrv":
                                 print(f"{r_formatted[1]} has arrived to the server !")
                                 add_to_chat("General", f"{r_formatted[1]} has arrived to the server !")
