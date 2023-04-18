@@ -208,8 +208,8 @@ def help(mess, sock_fille):
     username = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
     if state == "afk":
         dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        write_to_log_file(f"{username} help ${dt} 415")
-        sock_fille.sendall("415".encode())
+        write_to_log_file(f"{username} help ${dt} 430")
+        sock_fille.sendall("430".encode())
     else:
         dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         write_to_log_file(f"{username} help ${dt} 200")
@@ -320,8 +320,8 @@ def msgpv(mess, sock_fille):
                 sock_fille.sendall("200".encode())            
             else:
                 dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                write_to_log_file(f"{username_or_ip} msgpv ${dt} 440")
-                sock_fille.sendall("440".encode())
+                write_to_log_file(f"{username_or_ip} msgpv ${dt} 421")
+                sock_fille.sendall("421".encode())
         else:
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             write_to_log_file(f"{username_or_ip} msgpv ${dt} 402")
@@ -434,19 +434,24 @@ def rename(mess, sock_fille):
         sock_fille.sendall("403".encode())
     else:
         new_username = mess[0]
-        usernameIsAvailable = verifyUsernameIsNotAlreadyTaken(new_username)
-        if not usernameIsAvailable:
-            user = getUser(sock_fille)
-            old_username = user.getUsername()
-            user.setUsername(new_username)
-            renameFromSrv(old_username, new_username, sock_fille)
-            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            write_to_log_file(f"{username_or_ip} rename ${dt} 200")
-            sock_fille.sendall("200".encode())
+        if new_username.isalpha():
+            usernameIsAvailable = verifyUsernameIsNotAlreadyTaken(new_username)
+            if not usernameIsAvailable:
+                user = getUser(sock_fille)
+                old_username = user.getUsername()
+                user.setUsername(new_username)
+                renameFromSrv(old_username, new_username, sock_fille)
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} rename ${dt} 200")
+                sock_fille.sendall("200".encode())
+            else:
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} rename ${dt} 425")
+                sock_fille.sendall("425".encode())
         else:
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            write_to_log_file(f"{username_or_ip} rename ${dt} 425")
-            sock_fille.sendall("425".encode())
+            write_to_log_file(f"{username_or_ip} rename ${dt} 426")
+            sock_fille.sendall("426".encode())
 
 def renameFromSrv(old_username, new_username, sock_fille):
     for i in range (len(users)):
@@ -515,7 +520,12 @@ def channel(mess, sock_fille):
             if dest_user is not None:
                 user_exists_in_dest_user_request_channel = dest_user.checkIfUserExistsInRequestChannel(user)
                 dest_user_exists_in_user_request_channel = user.checkIfUserExistsInRequestChannel(dest_user)
-                if user_exists_in_dest_user_request_channel:
+                dest_user_exists_in_user_channel = user.checkIfUserExistsInChannel(dest_user)
+                if dest_user_exists_in_user_channel:
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username_or_ip} channel ${dt} 404")
+                    sock_fille.sendall("404".encode())
+                elif user_exists_in_dest_user_request_channel:
                     dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                     write_to_log_file(f"{username_or_ip} channel ${dt} 441")
                     sock_fille.sendall("441".encode())
@@ -849,7 +859,7 @@ def write_to_log_file(text_to_write):
 
 users = []
 
-allCommands = "signup <username> : allows you to login into the chatroom\n msg <message> : sends a message in the global chatroom,\n msgpv <username>  <user> : sends a message to someone,\n exit : allows you to leave the chatroom,\n afk : avoid you to sends message in the chatroom,\n btk : allows you to send message in the chatroom if you were afk,\n users : Notifies which clients are connected to the server,\n rename <username> : allows you to change your name,\n ping <username> : sends a ping to a user,\n channel <username> : demands the specified user to create a private channel with him,\n acceptchannel <username> : accept the channel creation demand,\n declinechannel <username> : refuse the channel creation demand,\n sharefile <username> <namefile> : Share a file to someone but he has to accept,\n acceptfile <username> <namefile> : accept the file that has been shared by a user,\n declinefile <username> <namefile> : refuse the file that has benn shared by a user\n"
+allCommands = "signup <username> : allows you to login into the chatroom\n msg <message> : sends a message in the global chatroom,\n msgpv <username>  <user> : sends a message to someone,\n exit : allows you to leave the chatroom,\n afk : avoid you to sends message in the chatroom,\n btk : allows you to send message in the chatroom if you were afk,\n users : Notifies which clients are connected to the server,\n rename <username> : allows you to change your name,\n ping <username> : sends a ping to a user,\n channel <username> : demands the specified user to create a private channel with him,\n acceptchannel <username> : accept the channel creation demand,\n declinechannel <username> : refuse the channel creation demand,\n sharefile <username> <namefile> : Share a file to someone but he has to accept,\n acceptfile <username> <namefile> : accept the file that has been shared by a user,\n declinefile <username> <namefile> : refuse the file that has been shared by a user\n"
 
 lock_write_file = threading.Lock()
 cond_write_file = threading.Condition(lock_write_file)

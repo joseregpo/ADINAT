@@ -58,6 +58,11 @@ class User():
     def getRequestChannel(self):
         return self.requestChannel
     
+    def checkIfUserExistsInChannel(self, user):
+        if user in self.channel:
+            return True
+        return False
+    
     def addUserToRequestChannel(self, user):
         self.requestChannel.append(user)
 
