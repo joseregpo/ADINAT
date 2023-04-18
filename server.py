@@ -206,11 +206,7 @@ def help(mess, sock_fille):
     connected = getConnected(sock_fille)
     state = getState(sock_fille)
     username = getUsername(sock_fille) if connected else sock_fille.getsockname()[0]
-    if not connected:
-        dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        write_to_log_file(f"{username} help ${dt} 418")
-        sock_fille.sendall("418".encode())
-    elif state == "afk":
+    if state == "afk":
         dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         write_to_log_file(f"{username} help ${dt} 415")
         sock_fille.sendall("415".encode())
