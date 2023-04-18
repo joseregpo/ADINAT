@@ -313,18 +313,23 @@ def msgpv(mess, sock_fille):
         dest_username = mess[0]
         dest_user = getUserByUsername(dest_username)
         if dest_user is not None:
-            channelExists = verifyChannelExists(sock_fille, dest_user)
-            if channelExists:
-                my_username = getUsername(sock_fille)
-                message = mess[1]
-                msgpvFromSrv(dest_user, message, my_username)
-                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                write_to_log_file(f"{username_or_ip} msgpv ${dt} 200")
-                sock_fille.sendall("200".encode())            
+            if dest_username != username_or_ip:
+                channelExists = verifyChannelExists(sock_fille, dest_user)
+                if channelExists:
+                    my_username = getUsername(sock_fille)
+                    message = mess[1]
+                    msgpvFromSrv(dest_user, message, my_username)
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username_or_ip} msgpv ${dt} 200")
+                    sock_fille.sendall("200".encode())            
+                else:
+                    dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    write_to_log_file(f"{username_or_ip} msgpv ${dt} 421")
+                    sock_fille.sendall("421".encode())
             else:
                 dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                write_to_log_file(f"{username_or_ip} msgpv ${dt} 421")
-                sock_fille.sendall("421".encode())
+                write_to_log_file(f"{username_or_ip} msgpv ${dt} 407")
+                sock_fille.sendall("407".encode())
         else:
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             write_to_log_file(f"{username_or_ip} msgpv ${dt} 402")
@@ -482,10 +487,15 @@ def ping(mess, sock_fille):
         username = getUsername(sock_fille)
         dest_user = getUserByUsername(mess[0])
         if dest_user is not None:
-            pingFromSrv(dest_user, username)
-            dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            write_to_log_file(f"{username_or_ip} ping ${dt} 200")
-            sock_fille.sendall("200".encode())
+            if dest_user.getUsername() != username:
+                pingFromSrv(dest_user, username)
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} ping ${dt} 200")
+                sock_fille.sendall("200".encode())
+            else:
+                dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                write_to_log_file(f"{username_or_ip} ping ${dt} 402")
+                sock_fille.sendall("402".encode())
         else:
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             write_to_log_file(f"{username_or_ip} ping ${dt} 402")
@@ -655,8 +665,8 @@ def sharefile(mess, sock_fille):
         user = getUser(sock_fille)
         if user.getUsername() == mess[0]:
             dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            write_to_log_file(f"{username_or_ip} sharefile ${dt} 448")
-            sock_fille.sendall("448".encode())
+            write_to_log_file(f"{username_or_ip} sharefile ${dt} 407")
+            sock_fille.sendall("407".encode())
         else: 
             dest_user = getUserByUsername(mess[0])
             if dest_user is not None:
