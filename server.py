@@ -197,7 +197,7 @@ def traiter_client(sock_fille):
                     username = getUsername(sock_fille) if getUsername(sock_fille) != None else sock_fille.getsockname()[0]
                     dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                     write_to_log_file(f"{username} unknown command ${dt} 400")
-                    #sock_fille.sendall(("400|"+allCommands).encode())
+                    sock_fille.sendall(("400|"+allCommands).encode())
         except Exception as e:
             logging.error(traceback.format_exc())
             break
@@ -772,7 +772,7 @@ def declinefile(mess, sock_fille):
 
 def declinedFileFromSrv(sender, user, file):
     user.removeFromRequestSharefile(sender, file)
-    sender.getSocket().sendall(("declinedfileFromSrv|"+user.getUsername()).encode())
+    sender.getSocket().sendall(("declinedfileFromSrv|"+user.getUsername()+"|"+file).encode())
 
 def exit(sock_fille):
     connected = getConnected(sock_fille)
@@ -873,7 +873,7 @@ def write_to_log_file(text_to_write):
 
 users = []
 
-allCommands = "signup <username> : allows you to login into the chatroom\n msg <message> : sends a message in the global chatroom,\n msgpv <username>  <user> : sends a message to someone,\n exit : allows you to leave the chatroom,\n afk : avoid you to sends message in the chatroom,\n btk : allows you to send message in the chatroom if you were afk,\n users : Notifies which clients are connected to the server,\n rename <username> : allows you to change your name,\n ping <username> : sends a ping to a user,\n channel <username> : demands the specified user to create a private channel with him,\n acceptchannel <username> : accept the channel creation demand,\n declinechannel <username> : refuse the channel creation demand,\n sharefile <username> <namefile> : Share a file to someone but he has to accept,\n acceptfile <username> <namefile> : accept the file that has been shared by a user,\n declinefile <username> <namefile> : refuse the file that has been shared by a user\n"
+allCommands = "signup <username> : allows you to login into the chatroom\n msg <message> : sends a message in the global chatroom,\n msgpv <username> <message> : sends a message to someone,\n exit : allows you to leave the chatroom,\n afk : avoid you to sends message in the chatroom,\n btk : allows you to send message in the chatroom if you were afk,\n users : Notifies which clients are connected to the server,\n rename <username> : allows you to change your name,\n ping <username> : sends a ping to a user,\n channel <username> : demands the specified user to create a private channel with him,\n acceptchannel <username> : accept the channel creation demand,\n declinechannel <username> : refuse the channel creation demand,\n sharefile <username> <absolut_file_path> <port> : Share a file to someone but he has to accept,\n acceptfile <username> <namefile> : accept the file that has been shared by a user,\n declinefile <username> <namefile> : refuse the file that has been shared by a user\n"
 
 lock_write_file = threading.Lock()
 cond_write_file = threading.Condition(lock_write_file)
@@ -886,12 +886,13 @@ able_to_use = True
 config = configparser.ConfigParser()
 config.read('adinat.conf')
 
+ip = config.get("server", "ip")
 port = config.get("server", "port")
 log_file_name = config.get("log", "filename")
 
 
 with socket.socket() as sock_locale:
-    sock_locale.bind(("", int(port)))
+    sock_locale.bind((str(ip), int(port)))
     sock_locale.listen(4)
     
     while True:

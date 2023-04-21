@@ -205,8 +205,6 @@ def update_users_list(users_string):
     users_string = users_string.replace("'","")
     users_string = users_string.replace(" ","")
     connected_users = users_string.split(",")
-    print(connected_users)
-    # print(users_string[1:len(users_string)-1])
 
 def renameFromSrv(r_formatted):
     global file_queue, file_reception_requests, chatrooms
@@ -247,18 +245,22 @@ def send_file(r_formatted):
     global file_queue
     user = r_formatted[1]
     file_name = r_formatted[2]
-    file_stats = os.stat(file_name)
-    progress = tqdm.tqdm(range(file_stats.st_size), f"Sending {file_name}", unit="B", unit_scale=True, unit_divisor=1024)
     for u, (f, sock) in file_queue.items():
-        s_target, _ = sock.accept()
-        if u == user and f == file_name:
-            with open(file_name, "rb") as f:
+        if u == user and os.path.basename(f) == file_name:
+            print("wow")
+            file_stats = os.stat(f)
+            progress = tqdm.tqdm(range(file_stats.st_size), f"Sending {f}", unit="B", unit_scale=True, unit_divisor=1024)
+            s_target, _ = sock.accept()
+            with open(f, "rb") as file_t_send:
                 while True:
-                    bytes_read = f.read(4096)
-                    if not bytes_read:
-                        break
-                    s_target.sendall(bytes_read)
-                    progress.update(len(bytes_read))
+                    try:
+                        bytes_read = file_t_send.read(4096)
+                        if not bytes_read:
+                            break
+                        s_target.sendall(bytes_read)
+                        progress.update(len(bytes_read))
+                    except Exception as e:
+                        logging.error(traceback.format_exc())
 
 def accept_file_from_srv_v2(r_formatted):
     # A thread for each file we send
@@ -272,6 +274,7 @@ def prepare_share_file(sock, m_formatted):
     f_path = m_formatted[2]
     file_stats = os.stat(f_path)
     f_name = os.path.basename(f_path)
+    dest_user = m_formatted[1]
 
     #A Socket for each file to send
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -282,7 +285,7 @@ def prepare_share_file(sock, m_formatted):
         file_queue[m_formatted[1]].extend([f_path, s])
     else:
         file_queue[m_formatted[1]] = [f_path, s]
-    return f"sharefile {username} {f_name} {m_formatted[3]} {file_stats.st_size}"
+    return f"sharefile {dest_user} {f_name} {m_formatted[3]} {file_stats.st_size}"
 
 def share_file_from_srv(m_formatted):
     global file_reception_requests
@@ -312,24 +315,20 @@ def accept_file(response_formatted):
                     t.join
 
 def wait_for_file_arrival(sock, size, user, file):
-    progress = tqdm.tqdm(range(int(size)), f"Receiving {user}", unit="B", unit_scale=True, unit_divisor=1024)
     with sock:
-        with open("testfile.jpg", "wb") as f:
+        progress = tqdm.tqdm(range(int(size)), f"Receiving {file} from {user}", unit="B", unit_scale=True, unit_divisor=1024)
+        with open(("downloads/"+file), "wb") as f:
         # with open(file, "wb") as f:
             while True:
                 try:
                     bytes_read = sock.recv(4096)
-                    if not bytes_read:    
-                        # nothing is received
-                        # file transmitting is done
+                    if not bytes_read:
                         break
-                    # write to the file the bytes we just received
                     f.write(bytes_read)
-                    # update the progress bar
+                    progress.update(len(bytes_read))
                 except Exception as e:
                     logging.error(traceback.format_exc())
         sock.shutdown(socket.SHUT_RDWR)
-        progress.update(len(bytes_read))
     sys.exit(0)
 
 def talk_to_server(sock):
@@ -404,8 +403,12 @@ class MainWindow(QWidget, Ui_DISCUSSIT):
             sys.exit(0)
         last_command = cmd
         temp = cmd.split(" ")
-        print(temp)
         if temp[0] == "sharefile":
+            if len(temp) != 4:                        
+                self.add_to_chat("Errors", f"403 : "+reponses_possibles["403"])
+                self.update_chatroom_by_name("Errors")
+                last_command = ""
+                return
             if check_file_path(temp[2]) and check_port_availability(self.sock_locale, temp[3]):
                 cmd = prepare_share_file(self.sock_locale, temp)
                 self.sock_locale.sendall(cmd.encode())
@@ -420,7 +423,6 @@ class MainWindow(QWidget, Ui_DISCUSSIT):
             self.sock_locale.sendall(cmd.encode())
         else:
             self.sock_locale.sendall(cmd.encode())
-        # self.sock_locale.sendall("users".encode())
     
     def updateUsersList(self, users_string):
         global connected_users
@@ -448,6 +450,7 @@ class MainWindow(QWidget, Ui_DISCUSSIT):
         else :
             chatrooms[nom_chat] = [msg]
     
+    #non implementé dans l'interface
     def traiter_state(self, user, state):
         for u in connected_users:
             if u == user:
@@ -466,27 +469,34 @@ class MainWindow(QWidget, Ui_DISCUSSIT):
                     cpteur_reponses += 1
                     reponse = sock.recv(1024)
                     reponse = reponse.decode()
-                    # print(f"reponse nro : {cpteur_reponses} avec {reponse}")
                     r_formatted = reponse.split("|")
                     #Traitement des messages constants du serveur
                     if r_formatted[0] != "200" and r_formatted[0] in reponses_possibles.keys():
-                        print(r_formatted[0] + " : " + reponses_possibles[r_formatted[0]])
+                        self.add_to_chat("Errors", f"{r_formatted[0]} : {reponses_possibles[r_formatted[0]]}")
+                        self.update_chatroom_by_name("Errors")
+                        last_command = ""
                     else:
                         if r_formatted[0] not in commands_from_srv:
                             command = last_command.split(' ')
                             match command[0]:
                                 case "help":
-                                    self.add_to_chat("General", r_formatted[1])
+                                    pass
+                                
                                 case "signup":
                                     username = last_command.split(" ", 1)
                                     username = username[1]
-                                    self.add_to_chat("General", "You are now connected jhsbflhsfdlk")
+                                    self.add_to_chat("General", f"You are now connected, Welcome  {username}!")
+                                    self.add_to_chat("General", f"Vous pouvez taper la commande 'help' pour voir nos commandes !")
                                     self.update_chatroom_by_name("General")
                                     self.request_users(2)
                                     state = "btk"
 
                                 case "msg":
-                                    self.add_to_chat("General", f"{username} : {command[1]}")
+                                    temp = command [1:]
+                                    msg = ""
+                                    for mot in temp:
+                                        msg += mot + " "
+                                    self.add_to_chat("General", f"{username} : {msg}")
                                     self.update_chatroom_by_name("General")
 
                                 case "msgpv":
@@ -555,6 +565,10 @@ class MainWindow(QWidget, Ui_DISCUSSIT):
                             last_command = ""
                         else :
                             match r_formatted[0]:
+                                case "helpFromSrv":
+                                    self.add_to_chat("General", f"{r_formatted[1]}")
+                                    self.update_chatroom_by_name("General")
+
                                 case "signupFromSrv":
                                     self.add_to_chat("General", f"{r_formatted[1]} has arrived to the server !")
                                     if r_formatted[1] not in connected_users:
@@ -610,16 +624,16 @@ class MainWindow(QWidget, Ui_DISCUSSIT):
 
                                 case "sharefileFromSrv":
                                     share_file_from_srv(r_formatted)
-                                    self.add_to_chat("General", f"{r_formatted[1]} wants to send you a file")
+                                    self.add_to_chat("General", f"{r_formatted[1]} wants to send you a file : {r_formatted[2]} de taille : {r_formatted[3]}")
                                     self.update_chatroom_by_name("General")
 
                                 case "acceptedfileFromSrv":
-                                    self.add_to_chat("General", f"{r_formatted[1]} has accepted to receive your file")
+                                    self.add_to_chat("General", f"{r_formatted[1]} has accepted to receive your file : {r_formatted[2]}")
                                     accept_file_from_srv_v2(r_formatted)
                                     self.update_chatroom_by_name("General")
 
                                 case "declinedfileFromSrv":
-                                    self.add_to_chat("General", f"{r_formatted[1]} doesn't want files from you D: ")
+                                    self.add_to_chat("General", f"{r_formatted[1]} doesn't want the file : {r_formatted[2]} from you D: ")
                                     self.update_chatroom_by_name("General")
 
                 except Exception as e:
@@ -627,7 +641,8 @@ class MainWindow(QWidget, Ui_DISCUSSIT):
 
 
 if __name__ == '__main__':
-    import sys
+##### Decommentez ces lignes pour lancer le client en mode console
+    
     #Socket de connexion au serveur
     # sock_locale = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # sock_locale.connect((adresse, int(port)))
@@ -640,6 +655,9 @@ if __name__ == '__main__':
     #     if t != threading.main_thread(): 
     #         t.join
 
+#####
+
+#### Vous pourrez aussi commenter de la ligne 643 à la fin pour empêcher l'interface graphique d'aparaître
     app = QApplication(sys.argv)
     win = MainWindow()
     win.show()
